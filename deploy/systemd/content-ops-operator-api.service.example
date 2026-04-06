@@ -1,0 +1,17 @@
+[Unit]
+Description=Content Ops Operator API
+After=network.target
+
+[Service]
+Type=simple
+User=co_ma
+Group=co_ma
+WorkingDirectory=/opt/co_ma/current
+ExecStart=/opt/co_ma/current/.venv/bin/python src/cli/run_operator_api.py
+Restart=on-failure
+RestartSec=5
+Environment=CONTENT_OPS_OPERATOR_API_HOST=127.0.0.1
+Environment=CONTENT_OPS_OPERATOR_API_PORT=8765
+
+[Install]
+WantedBy=multi-user.target

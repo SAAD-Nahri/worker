@@ -1,0 +1,123 @@
+.content-ops-wrap .notice-inline {
+  margin: 12px 0;
+}
+
+.content-ops-dashboard-grid {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  margin: 20px 0;
+}
+
+.content-ops-card {
+  background: #fff;
+  border: 1px solid #dcdcde;
+  border-radius: 6px;
+  padding: 16px;
+  box-shadow: 0 1px 1px rgba(0, 0, 0, 0.04);
+}
+
+.content-ops-card h2,
+.content-ops-card h3 {
+  margin-top: 0;
+}
+
+.content-ops-metric {
+  font-size: 28px;
+  font-weight: 600;
+  line-height: 1.1;
+}
+
+.content-ops-review-layout {
+  display: grid;
+  gap: 20px;
+  grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr);
+  align-items: start;
+  margin-top: 20px;
+}
+
+.content-ops-preview,
+.content-ops-sidebar {
+  background: #fff;
+  border: 1px solid #dcdcde;
+  border-radius: 6px;
+  padding: 18px;
+}
+
+.content-ops-meta-list,
+.content-ops-history-list {
+  margin: 0;
+  padding-left: 18px;
+}
+
+.content-ops-preview section {
+  margin-bottom: 20px;
+}
+
+.content-ops-preview ul {
+  list-style: disc;
+  padding-left: 20px;
+}
+
+.content-ops-inline-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.content-ops-review-form textarea,
+.content-ops-schedule-form input[type="datetime-local"] {
+  width: 100%;
+}
+
+.content-ops-muted {
+  color: #646970;
+}
+
+.content-ops-fast-lane {
+  border-left: 4px solid #72aee6;
+}
+
+.content-ops-pill {
+  display: inline-block;
+  border-radius: 999px;
+  padding: 2px 8px;
+  font-size: 12px;
+  font-weight: 600;
+  background: #f0f6fc;
+  color: #1d2327;
+}
+
+.content-ops-status-ok {
+  background: #edfaef;
+  color: #0f5132;
+}
+
+.content-ops-status-fail {
+  background: #fbeaea;
+  color: #842029;
+}
+
+.content-ops-status-warn {
+  background: #fff4e5;
+  color: #8a4b00;
+}
+
+.content-ops-validation-list {
+  margin: 0;
+  padding-left: 20px;
+}
+
+.content-ops-validation-list li {
+  margin-bottom: 8px;
+}
+
+.content-ops-guidance-card {
+  border-left: 4px solid #dba617;
+}
+
+@media (max-width: 960px) {
+  .content-ops-review-layout {
+    grid-template-columns: 1fr;
+  }
+}

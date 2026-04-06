@@ -1,0 +1,286 @@
+{
+  "version": "phase2_gold_set_v1",
+  "cases": [
+    {
+      "case_id": "pak_mo_clean_fit",
+      "source_item_id": "b3b1fae29b000493955232a2574e3317f0c8e375",
+      "expected_template_id": "blog_food_fact_v1",
+      "expected_subject_anchor": "Thai Vietnamese Crispy Rice Paper Wrap",
+      "expected_intro_terms": [
+        "thai vietnamese crispy rice paper wrap",
+        "rice paper wraps"
+      ],
+      "forbidden_intro_terms": [
+        "until",
+        "summary",
+        "photo"
+      ],
+      "expected_quality_gate_status": "pass",
+      "expected_required_flags": [],
+      "expected_routing_action": "proceed",
+      "reason": "Checks parenthetical title handling and foreign-dish framing on a clean enough explainer fit."
+    },
+    {
+      "case_id": "costco_container_clean_fit",
+      "source_item_id": "0637ac87046ef3cc65bc45e52155c9f627622329",
+      "expected_template_id": "blog_curiosity_food_v1",
+      "expected_subject_anchor": "costco croissant container",
+      "expected_intro_terms": [
+        "costco croissant container",
+        "environmental sustainability"
+      ],
+      "forbidden_intro_terms": [
+        "container, plastic, and your",
+        "commission"
+      ],
+      "expected_quality_gate_status": "pass",
+      "expected_required_flags": [],
+      "expected_routing_action": "proceed",
+      "reason": "Checks clean curiosity routing and better support-anchor quality on a repurposing story."
+    },
+    {
+      "case_id": "jacques_pepin_named_person_clean_fit",
+      "source_item_id": "c421b428894b627aa30123361debffe193871270",
+      "expected_template_id": "blog_food_fact_v1",
+      "expected_subject_anchor": "jacques pepin",
+      "expected_intro_terms": [
+        "jacques pepin",
+        "coconut",
+        "marshmallows"
+      ],
+      "forbidden_intro_terms": [
+        "exceptions prove he'll",
+        "where",
+        "photo"
+      ],
+      "expected_quality_gate_status": "pass",
+      "expected_required_flags": [],
+      "expected_routing_action": "proceed",
+      "reason": "Checks named-person food stories and body-supported support anchors."
+    },
+    {
+      "case_id": "sopa_negra_review_only",
+      "source_item_id": "4fd1e3a4b14f379e1eebf200ac3864cf05ee296e",
+      "expected_template_id": "blog_food_fact_v1",
+      "expected_subject_anchor": "Costa Rican Black Bean Soup",
+      "expected_intro_terms": [
+        "costa rican black bean soup",
+        "sopa negra"
+      ],
+      "forbidden_intro_terms": [
+        "photo",
+        "appeared first on"
+      ],
+      "expected_quality_gate_status": "review_flag",
+      "expected_required_flags": [
+        "derivative_risk_medium"
+      ],
+      "expected_routing_action": "review_only",
+      "reason": "Checks a culturally framed dish explainer that is usable but still too close to source phrasing."
+    },
+    {
+      "case_id": "tsoureki_hold_for_reroute",
+      "source_item_id": "5d1d078eb1ee712d2d76cd96a5578e47b9cf7543",
+      "expected_template_id": "blog_food_fact_v1",
+      "expected_subject_anchor": "Greek Easter Bread",
+      "expected_intro_terms": [
+        "greek easter bread",
+        "tsoureki"
+      ],
+      "forbidden_intro_terms": [
+        "photo",
+        "matt",
+        "ingredients"
+      ],
+      "expected_quality_gate_status": "review_flag",
+      "expected_required_flags": [
+        "source_context_recipe_heavy"
+      ],
+      "expected_routing_action": "hold_for_reroute",
+      "reason": "Checks that recipe-heavy source context is surfaced and held instead of silently promoted."
+    },
+    {
+      "case_id": "italian_street_foods_listicle_hold",
+      "source_item_id": "eea895c96f3ba05d3c9d5fda6f1d10ca6316373e",
+      "expected_template_id": "blog_food_fact_v1",
+      "expected_subject_anchor": "10 Italian Street Foods You Need To Try",
+      "expected_intro_terms": [
+        "10 italian street foods you need to try"
+      ],
+      "forbidden_intro_terms": [
+        "you can't skip"
+      ],
+      "expected_quality_gate_status": "review_flag",
+      "expected_required_flags": [
+        "semantic_term_noise"
+      ],
+      "expected_routing_action": "hold_for_reroute",
+      "reason": "Checks listicle and roundup behavior that should not flow straight through the short explainer path."
+    },
+    {
+      "case_id": "automated_pay_stations_sentiment_hold",
+      "source_item_id": "78484fac658746a3f991d5733c10da6adfa1e970",
+      "expected_template_id": "blog_food_fact_v1",
+      "expected_subject_anchor": "Costco's Automated Pay Stations Are Here",
+      "expected_intro_terms": [
+        "costco's automated pay stations are here"
+      ],
+      "forbidden_intro_terms": [
+        "and fans are underwhelmed"
+      ],
+      "expected_quality_gate_status": "review_flag",
+      "expected_required_flags": [
+        "anchor_title_mismatch"
+      ],
+      "expected_routing_action": "hold_for_reroute",
+      "reason": "Checks dashed consumer-news titles that should be held even after the subject anchor improves."
+    },
+    {
+      "case_id": "haunted_restaurant_novelty_hold",
+      "source_item_id": "2ec5380afe2daa2578fa3afac82504bd2020dbf8",
+      "expected_template_id": "blog_food_fact_v1",
+      "expected_subject_anchor": "This NYC Restaurant Is Supposedly Haunted By Over 20 Ghosts",
+      "expected_intro_terms": [],
+      "forbidden_intro_terms": [],
+      "expected_quality_gate_status": "pass",
+      "expected_required_flags": [],
+      "expected_routing_action": "hold_for_reroute",
+      "reason": "Checks that restaurant-venue novelty stories are held even when the deterministic formatter can still produce a structurally valid draft."
+    },
+    {
+      "case_id": "big_arch_price_comparison_hold",
+      "source_item_id": "06b7492c4d8577567bea1dfdaf4610075e947943",
+      "expected_template_id": "blog_food_fact_v1",
+      "expected_subject_anchor": "The US States With The Most And Least Expensive McDonald's Big Arch Burger",
+      "expected_intro_terms": [],
+      "forbidden_intro_terms": [],
+      "expected_quality_gate_status": "pass",
+      "expected_required_flags": [],
+      "expected_routing_action": "hold_for_reroute",
+      "reason": "Checks that geographic price-comparison roundups are held as weak-fit comparison content instead of being mistaken for clean explainers."
+    },
+    {
+      "case_id": "short_ribs_recipe_title_hold",
+      "source_item_id": "701c8dbb07eb14e7f02152d4514d1677e22b2a17",
+      "expected_template_id": "blog_food_fact_v1",
+      "expected_subject_anchor": "Red Wine–Braised Short Ribs",
+      "expected_intro_terms": [
+        "braised short ribs",
+        "wine"
+      ],
+      "forbidden_intro_terms": [
+        "jump to recipe"
+      ],
+      "expected_quality_gate_status": "review_flag",
+      "expected_required_flags": [
+        "derivative_risk_medium"
+      ],
+      "expected_routing_action": "hold_for_reroute",
+      "reason": "Checks direct recipe-title content that should be rerouted instead of normalized into a generic explainer."
+    },
+    {
+      "case_id": "tax_day_recipes_listicle_hold",
+      "source_item_id": "16b437bf11c1cc5058c3ff71a716b758442ef116",
+      "expected_template_id": "blog_food_fact_v1",
+      "expected_subject_anchor": "17 Recipes to Help You Survive Tax Day",
+      "expected_intro_terms": [
+        "17 recipes to help you survive tax day"
+      ],
+      "forbidden_intro_terms": [
+        "you need to try"
+      ],
+      "expected_quality_gate_status": "pass",
+      "expected_required_flags": [],
+      "expected_routing_action": "hold_for_reroute",
+      "reason": "Checks that broad holiday or event recipe roundups are held as weak-fit listicles instead of flowing through the short explainer path."
+    },
+    {
+      "case_id": "maryland_crab_soup_recipe_heavy_hold",
+      "source_item_id": "1aab755ebf139863a560c0ddd30bbff8dd64aca3",
+      "expected_template_id": "blog_food_fact_v1",
+      "expected_subject_anchor": "Maryland Half-and-Half Crab Soup",
+      "expected_intro_terms": [
+        "maryland half-and-half crab soup",
+        "creamy",
+        "brothy"
+      ],
+      "forbidden_intro_terms": [
+        "jono pandolfi",
+        "photo"
+      ],
+      "expected_quality_gate_status": "review_flag",
+      "expected_required_flags": [
+        "source_context_recipe_heavy",
+        "source_context_noisy"
+      ],
+      "expected_routing_action": "hold_for_reroute",
+      "reason": "Checks that recipe-heavy regional soup pages keep the correct title anchor while still surfacing reroute-level recipe and noise flags."
+    },
+    {
+      "case_id": "haunted_restaurant_duplicate_snapshot_reject",
+      "source_item": {
+        "item_id": "2ec5380afe2daa2578fa3afac82504bd2020dbf8",
+        "source_id": "src_food_republic",
+        "source_name": "Food Republic",
+        "source_family": "food_editorial",
+        "run_id": null,
+        "source_url": "https://www.foodrepublic.com/2133780/nyc-restaurant-haunted-one-if-by-land-two-if-by-sea/",
+        "canonical_url": "https://www.foodrepublic.com/2133780/nyc-restaurant-haunted-one-if-by-land-two-if-by-sea",
+        "discovered_at": "2026-04-03T01:30:54.379911+00:00",
+        "fetched_at": "2026-04-03T01:30:54.379911+00:00",
+        "raw_title": "This NYC Restaurant Is Supposedly Haunted By Over 20 Ghosts",
+        "raw_summary": "One New York City restaurant reportedly serves more than just dinner; over 20 ghosts are said to routinely provide guests with an otherworldly experience.",
+        "raw_body_text": "One New York City restaurant reportedly serves more than just dinner; over 20 ghosts are said to routinely provide guests with an otherworldly experience.",
+        "author_name": "staff@foodrepublic.com (Cami Cox)",
+        "published_at": "Thu, 02 Apr 2026 19:17:00 +0000",
+        "topical_label": "food_explainer",
+        "freshness_label": "fresh",
+        "normalization_status": "normalized",
+        "dedupe_status": "exact_duplicate",
+        "body_extraction_status": "skipped_non_unique",
+        "body_word_count": 24,
+        "quality_flags": [
+          "article_body_not_fetched"
+        ],
+        "template_suggestion": "food_fact_article",
+        "normalized_title": "this nyc restaurant is supposedly haunted by over 20 ghosts",
+        "content_hash": "bf42082209065f9262a1e8c85c03952f7cc68c74",
+        "matched_item_id": "2ec5380afe2daa2578fa3afac82504bd2020dbf8",
+        "dedupe_reason": "canonical_url_match"
+      },
+      "expected_format_result": "error",
+      "expected_routing_action": "reject_for_v1",
+      "expected_error_fragment": "non_unique_source_item:exact_duplicate",
+      "reason": "Provides a captured live duplicate snapshot so the blocked gold-set control is no longer synthetic-only."
+    },
+    {
+      "case_id": "synthetic_insufficient_text_reject",
+      "source_item": {
+        "item_id": "synthetic-gold-set-thin",
+        "source_id": "src_synthetic",
+        "source_name": "Synthetic Source",
+        "source_family": "food_editorial",
+        "run_id": "run-gold-set",
+        "source_url": "https://example.com/thin",
+        "canonical_url": "https://example.com/thin",
+        "discovered_at": "2026-04-03T00:00:00+00:00",
+        "fetched_at": "2026-04-03T00:00:00+00:00",
+        "raw_title": "Tiny Example",
+        "raw_summary": "Too short to support a draft.",
+        "raw_body_text": "Too short.",
+        "author_name": null,
+        "published_at": "2026-04-03T00:00:00+00:00",
+        "topical_label": "food_explainer",
+        "freshness_label": "fresh",
+        "normalization_status": "normalized",
+        "dedupe_status": "unique",
+        "quality_flags": [],
+        "template_suggestion": "food_fact_article"
+      },
+      "expected_format_result": "error",
+      "expected_routing_action": "reject_for_v1",
+      "expected_error_fragment": "not eligible",
+      "reason": "Provides a fixed blocked control so the gold set also guards the eligibility floor."
+    }
+  ]
+}

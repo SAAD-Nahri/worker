@@ -1,0 +1,20 @@
+{
+  "base_url": "https://kuchniatwist.pl",
+  "username": "romero",
+  "application_password": "wASM dqHr jLMI  HJBE",
+  "category_id_by_name": {
+    "food-facts": 6,
+    "ingredient-guides": 13,
+    "food-questions": 14,
+    "food-history-culture": 15,
+    "food-benefits-light": 16
+  },
+  "tag_id_by_name": {
+    "food-facts": 6,
+    "ingredient-guides": 13,
+    "food-questions": 14,
+    "food-history-culture": 15,
+    "food-benefits-light": 16
+  },
+  "timeout_seconds": 20
+}

@@ -1,0 +1,21 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "content-ops-source-engine"
+version = "0.1.0"
+description = "Phase 1 source engine for the content operations system."
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi>=0.135.0,<1.0",
+    "httpx>=0.28.0,<1.0",
+    "uvicorn>=0.43.0,<1.0",
+]
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]

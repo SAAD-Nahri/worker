@@ -1,0 +1,16 @@
+services:
+  operator-api:
+    build:
+      context: .
+      dockerfile: Dockerfile.operator-api
+    environment:
+      CONTENT_OPS_OPERATOR_API_HOST: 0.0.0.0
+      CONTENT_OPS_OPERATOR_API_PORT: 8765
+      CONTENT_OPS_OPERATOR_API_SHARED_SECRET: ${CONTENT_OPS_OPERATOR_API_SHARED_SECRET}
+      CONTENT_OPS_OPERATOR_API_ENABLE_DOCS: ${CONTENT_OPS_OPERATOR_API_ENABLE_DOCS:-false}
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8765/healthz', timeout=5).read()"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
