@@ -10,6 +10,9 @@ data/draft_reviews.jsonl
 data/blog_publish_records.jsonl
 data/social_package_records.jsonl
 data/social_package_reviews.jsonl
+data/media_brief_records.jsonl
+data/asset_records.jsonl
+data/asset_review_records.jsonl
 data/facebook_publish_records.jsonl
 data/queue_item_records.jsonl
 data/blog_facebook_mapping_records.jsonl

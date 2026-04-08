@@ -55,13 +55,19 @@ These documents convert the planning stack into a real operating starting point.
 17. [APPROVAL_UI_RUNBOOK.md](C:/Users/Administrator/OneDrive/Documents/co_ma/docs/execution/APPROVAL_UI_RUNBOOK.md)
    The operator runbook for the internal operator API, WordPress admin plugin shell, and review-safe approval workflow.
 
-18. [COOLIFY_OPERATOR_API_DEPLOYMENT_RUNBOOK.md](C:/Users/Administrator/OneDrive/Documents/co_ma/docs/execution/COOLIFY_OPERATOR_API_DEPLOYMENT_RUNBOOK.md)
+18. [PHASE_4_9_LIVE_VALIDATION_WORKSHEET.md](C:/Users/Administrator/OneDrive/Documents/co_ma/docs/execution/PHASE_4_9_LIVE_VALIDATION_WORKSHEET.md)
+   The step-by-step worksheet for the first real WordPress-admin validation session, including evidence capture and pass/fail gates.
+
+19. [PHASE_4_9_PLUGIN_REFRESH_AND_LIVE_RUN.md](C:/Users/Administrator/OneDrive/Documents/co_ma/docs/execution/PHASE_4_9_PLUGIN_REFRESH_AND_LIVE_RUN.md)
+   The exact package-build, plugin-refresh, and admin page order for the first real Phase 4.9 live run.
+
+20. [COOLIFY_OPERATOR_API_DEPLOYMENT_RUNBOOK.md](C:/Users/Administrator/OneDrive/Documents/co_ma/docs/execution/COOLIFY_OPERATOR_API_DEPLOYMENT_RUNBOOK.md)
    The hosted deployment runbook for running the Operator API on Coolify with a real HTTPS domain and Git-based autodeploy.
 
-19. [PHASE_4_7_ACCEPTANCE_BATCH_1.md](C:/Users/Administrator/OneDrive/Documents/co_ma/docs/execution/PHASE_4_7_ACCEPTANCE_BATCH_1.md)
+20. [PHASE_4_7_ACCEPTANCE_BATCH_1.md](C:/Users/Administrator/OneDrive/Documents/co_ma/docs/execution/PHASE_4_7_ACCEPTANCE_BATCH_1.md)
    The first media-layer batch covering approved-draft media briefs, provenance-tagged asset records, operator review, and asset readiness visibility through the publish chain.
 
-20. [PHASE_4_8_ACCEPTANCE_BATCH_1.md](C:/Users/Administrator/OneDrive/Documents/co_ma/docs/execution/PHASE_4_8_ACCEPTANCE_BATCH_1.md)
+21. [PHASE_4_8_ACCEPTANCE_BATCH_1.md](C:/Users/Administrator/OneDrive/Documents/co_ma/docs/execution/PHASE_4_8_ACCEPTANCE_BATCH_1.md)
    The first runtime-operations batch covering backup/restore tooling plus scheduled deployment examples for production rehearsal.
 
 21. [PHASE_4_5_ACCEPTANCE_BATCH_1.md](C:/Users/Administrator/OneDrive/Documents/co_ma/docs/execution/PHASE_4_5_ACCEPTANCE_BATCH_1.md)

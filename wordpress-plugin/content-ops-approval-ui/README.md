@@ -10,10 +10,16 @@ It is intentionally thin:
 
 ## Setup
 
-1. Copy this folder into `wp-content/plugins/`.
-2. Activate the plugin in WordPress admin.
-3. Open `Content Ops Approval > Settings`.
-4. Enter:
+1. Build the recommended zip package from the repo root:
+
+```powershell
+python src\cli\build_wordpress_plugin_package.py
+```
+
+2. Upload `wordpress-plugin/content-ops-approval-ui.zip` through WordPress admin, or copy this folder into `wp-content/plugins/`.
+3. Activate the plugin in WordPress admin.
+4. Open `Content Ops Approval > Settings`.
+5. Enter:
    - Operator API base URL
    - shared secret matching the repo worker operator API
 

@@ -45,6 +45,8 @@ python -m unittest tests.unit.operator_api.test_app tests.unit.distribution_engi
 ### 3. Manual WordPress validation
 
 Because the local repo environment does not currently include PHP CLI or a WordPress plugin harness, Phase 4.9 still requires live admin validation covering:
+Use [PHASE_4_9_LIVE_VALIDATION_WORKSHEET.md](C:/Users/Administrator/OneDrive/Documents/co_ma/docs/execution/PHASE_4_9_LIVE_VALIDATION_WORKSHEET.md) as the exact session script.
+Use [PHASE_4_9_PLUGIN_REFRESH_AND_LIVE_RUN.md](C:/Users/Administrator/OneDrive/Documents/co_ma/docs/execution/PHASE_4_9_PLUGIN_REFRESH_AND_LIVE_RUN.md) as the package-build and page-order guide.
 
 1. plugin activation,
 2. settings save path,

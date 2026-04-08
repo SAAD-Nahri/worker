@@ -70,7 +70,17 @@ Important:
 
 ### 1. Install
 
-Copy:
+Build the refresh package:
+
+```powershell
+python src\cli\build_wordpress_plugin_package.py
+```
+
+Recommended package:
+
+1. [wordpress-plugin/content-ops-approval-ui.zip](C:/Users/Administrator/OneDrive/Documents/co_ma/wordpress-plugin/content-ops-approval-ui.zip)
+
+Fallback unpacked source:
 
 1. [wordpress-plugin/content-ops-approval-ui](C:/Users/Administrator/OneDrive/Documents/co_ma/wordpress-plugin/content-ops-approval-ui)
 
@@ -214,6 +224,11 @@ python -m unittest discover -s tests -v
 ```
 
 ## Manual Validation Checklist
+
+For the first real admin pass, use:
+
+1. [PHASE_4_9_LIVE_VALIDATION_WORKSHEET.md](C:/Users/Administrator/OneDrive/Documents/co_ma/docs/execution/PHASE_4_9_LIVE_VALIDATION_WORKSHEET.md)
+2. [PHASE_4_9_PLUGIN_REFRESH_AND_LIVE_RUN.md](C:/Users/Administrator/OneDrive/Documents/co_ma/docs/execution/PHASE_4_9_PLUGIN_REFRESH_AND_LIVE_RUN.md)
 
 Use a real WordPress admin environment to verify:
 
