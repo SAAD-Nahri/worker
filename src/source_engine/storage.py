@@ -26,9 +26,12 @@ def write_registry(path: Path, records: list[dict[str, object]]) -> None:
     path.write_text(json.dumps(records, indent=2), encoding="utf-8")
 
 
-def append_source_items(items: Iterable[SourceItem]) -> None:
+def append_source_items(
+    items: Iterable[SourceItem],
+    path: Path = SOURCE_ITEMS_PATH,
+) -> None:
     ensure_data_dir()
-    with SOURCE_ITEMS_PATH.open("a", encoding="utf-8") as handle:
+    with path.open("a", encoding="utf-8") as handle:
         for item in items:
             handle.write(json.dumps(item.to_dict(), sort_keys=True) + "\n")
 

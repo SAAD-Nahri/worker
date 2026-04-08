@@ -34,11 +34,17 @@ def prepare_social_package_record(
 
     timestamp = _resolve_timestamp(created_at)
     package_template_id = select_facebook_package_template_id(draft)
+    comment_template_id = COMMENT_TEMPLATE_ID_BY_PACKAGE[package_template_id]
     hook_text = _build_hook_text(draft, package_template_id)
     caption_text = _build_caption_text(draft, package_template_id)
-    comment_template_id = COMMENT_TEMPLATE_ID_BY_PACKAGE[package_template_id]
     comment_cta_text = _build_comment_cta_text(draft, comment_template_id, blog_publish_record)
     blog_url = _resolve_confirmed_blog_url(blog_publish_record)
+    variant_options = _build_social_variant_options(
+        draft,
+        package_template_id=package_template_id,
+        comment_template_id=comment_template_id,
+        blog_publish_record=blog_publish_record,
+    )
     _validate_package_shape(
         package_template_id=package_template_id,
         hook_text=hook_text,
@@ -59,6 +65,7 @@ def prepare_social_package_record(
         approval_state="pending_review",
         blog_url=blog_url,
         selected_variant_label="deterministic_primary_v1",
+        variant_options=variant_options,
         packaging_notes=None,
         created_at=timestamp,
         updated_at=timestamp,
@@ -67,6 +74,20 @@ def prepare_social_package_record(
 
 def select_facebook_package_template_id(draft: DraftRecord) -> str:
     return PACKAGE_TEMPLATE_ID_BY_FAMILY.get(draft.template_family, "fb_short_caption_v1")
+
+
+def validate_social_package_shape(
+    package_template_id: str,
+    hook_text: str,
+    caption_text: str,
+    comment_cta_text: str,
+) -> None:
+    _validate_package_shape(
+        package_template_id=package_template_id,
+        hook_text=hook_text,
+        caption_text=caption_text,
+        comment_cta_text=comment_cta_text,
+    )
 
 
 def build_social_package_id(draft_id: str, created_at: str | None = None) -> str:
@@ -140,9 +161,168 @@ def _build_comment_cta_text(
         base = "Full post here if you want the full explanation."
     return _truncate_words(base, 18)
 
-    base = "I’ll drop the full post in the comments for anyone who wants the full explanation."
+
+def _build_social_variant_options(
+    draft: DraftRecord,
+    *,
+    package_template_id: str,
+    comment_template_id: str,
+    blog_publish_record: BlogPublishRecord | None,
+) -> list[dict[str, str]]:
+    title = clean_text(draft.headline_selected)
+    answer = _primary_answer_text(draft)
+    excerpt = clean_text(draft.excerpt or draft.intro_text or answer)
+    variants = [
+        {
+            "label": "deterministic_primary_v1",
+            "hook_text": _build_hook_text(draft, package_template_id),
+            "caption_text": _build_caption_text(draft, package_template_id),
+            "comment_cta_text": _build_comment_cta_text(
+                draft,
+                comment_template_id,
+                blog_publish_record,
+            ),
+        },
+        {
+            "label": "deterministic_supporting_v1",
+            "hook_text": _build_supporting_variant_hook(title, package_template_id),
+            "caption_text": _build_supporting_variant_caption(excerpt or answer, package_template_id),
+            "comment_cta_text": _build_supporting_variant_comment(
+                title,
+                comment_template_id,
+                blog_publish_record,
+            ),
+        },
+        {
+            "label": "deterministic_concise_v1",
+            "hook_text": _build_concise_variant_hook(title, answer, package_template_id),
+            "caption_text": _build_concise_variant_caption(excerpt or answer, package_template_id),
+            "comment_cta_text": _build_concise_variant_comment(
+                title,
+                comment_template_id,
+                blog_publish_record,
+            ),
+        },
+    ]
+    unique_variants: list[dict[str, str]] = []
+    seen_signatures: set[tuple[str, str, str]] = set()
+    for variant in variants:
+        _validate_package_shape(
+            package_template_id=package_template_id,
+            hook_text=variant["hook_text"],
+            caption_text=variant["caption_text"],
+            comment_cta_text=variant["comment_cta_text"],
+        )
+        signature = (
+            variant["hook_text"],
+            variant["caption_text"],
+            variant["comment_cta_text"],
+        )
+        if signature in seen_signatures:
+            continue
+        seen_signatures.add(signature)
+        unique_variants.append(variant)
+    return unique_variants
+
+
+def _build_supporting_variant_hook(title: str, package_template_id: str) -> str:
+    topic = _title_topic_fragment(title)
+    if package_template_id == "fb_curiosity_hook_v1":
+        return _truncate_words(f"What to know about {topic}?", 18)
+    if package_template_id == "fb_soft_cta_post_v1":
+        return _truncate_words(f"A practical look at {topic}", 16)
+    return _truncate_words(f"What to know about {topic}", 12)
+
+
+def _build_concise_variant_hook(title: str, answer: str, package_template_id: str) -> str:
+    topic = _title_topic_fragment(title)
+    lead = _first_sentence(answer)
+    if package_template_id == "fb_curiosity_hook_v1":
+        return _truncate_words(f"Why {topic} matters more than people expect?", 18)
+    if package_template_id == "fb_soft_cta_post_v1":
+        return _truncate_words(lead or f"Why {topic} matters", 16)
+    return _truncate_words(f"Why {topic} stands out", 12)
+
+
+def _build_supporting_variant_caption(base_text: str, package_template_id: str) -> str:
+    first_sentence = _first_sentence(base_text)
+    if package_template_id == "fb_curiosity_hook_v1":
+        return _truncate_words(
+            f"{first_sentence} The full post gives the quick context behind the headline question.",
+            34,
+        )
+    if package_template_id == "fb_soft_cta_post_v1":
+        return _truncate_words(
+            f"{first_sentence} The blog version keeps the practical points easy to scan and easy to reuse.",
+            34,
+        )
+    return _truncate_words(
+        f"{first_sentence} The blog post keeps the useful explanation short and easy to follow.",
+        28,
+    )
+
+
+def _build_concise_variant_caption(base_text: str, package_template_id: str) -> str:
+    first_sentence = _first_sentence(base_text)
+    if package_template_id == "fb_curiosity_hook_v1":
+        return _truncate_words(
+            f"{first_sentence} The blog post explains the short answer without dragging it out.",
+            34,
+        )
+    if package_template_id == "fb_soft_cta_post_v1":
+        return _truncate_words(
+            f"{first_sentence} The blog post turns the main idea into a quick practical read.",
+            34,
+        )
+    return _truncate_words(
+        f"{first_sentence} The full post gives the short answer in one quick read.",
+        28,
+    )
+
+
+def _build_supporting_variant_comment(
+    title: str,
+    comment_template_id: str,
+    blog_publish_record: BlogPublishRecord | None,
+) -> str:
+    has_blog_url = bool(_resolve_confirmed_blog_url(blog_publish_record))
+    topic = _title_topic_fragment(title)
+    if comment_template_id == "fb_comment_curiosity_reinforcement_v1":
+        base = f"I can drop the full post here if you want the fuller context on {topic}."
+        if has_blog_url:
+            base = f"Full post here if you want the fuller context on {topic}."
+        return _truncate_words(base, 20)
+    if comment_template_id == "fb_comment_read_more_prompt_v1":
+        base = f"The full post keeps the practical takeaway on {topic} in one place."
+        if has_blog_url:
+            base = f"Full post here if you want the practical takeaway on {topic}."
+        return _truncate_words(base, 18)
+    base = "I can drop the full post here if you want the fuller explanation."
     if has_blog_url:
-        base = "Full post here if you want the full explanation."
+        base = "Full post here if you want the fuller explanation."
+    return _truncate_words(base, 18)
+
+
+def _build_concise_variant_comment(
+    title: str,
+    comment_template_id: str,
+    blog_publish_record: BlogPublishRecord | None,
+) -> str:
+    has_blog_url = bool(_resolve_confirmed_blog_url(blog_publish_record))
+    topic = _title_topic_fragment(title)
+    if comment_template_id == "fb_comment_curiosity_reinforcement_v1":
+        base = "I can drop the full post here if you want the short answer and the longer context."
+        if has_blog_url:
+            base = "Full post here if you want the short answer and the longer context."
+        return _truncate_words(base, 20)
+    if comment_template_id == "fb_comment_read_more_prompt_v1":
+        base = f"The full post gives the practical answer on {topic} in one clean read."
+        if has_blog_url:
+            base = f"Full post here if you want the practical answer on {topic}."
+        return _truncate_words(base, 18)
+    base = "I can drop the full post here if you want the short answer."
+    if has_blog_url:
+        base = "Full post here if you want the short answer."
     return _truncate_words(base, 18)
 
 

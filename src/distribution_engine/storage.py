@@ -4,6 +4,7 @@ import json
 from pathlib import Path
 from typing import Iterable
 
+from content_engine.models import AiAssistanceRecord
 from distribution_engine.models import (
     BlogFacebookMappingRecord,
     FacebookPublishRecord,
@@ -297,6 +298,9 @@ def blog_publish_record_from_dict(payload: dict[str, object]) -> BlogPublishReco
 
 def social_package_record_from_dict(payload: dict[str, object]) -> SocialPackageRecord:
     normalized = dict(payload)
+    normalized["ai_assistance_log"] = [
+        AiAssistanceRecord(**entry) for entry in normalized.get("ai_assistance_log", [])
+    ]
     return SocialPackageRecord(**normalized)
 
 

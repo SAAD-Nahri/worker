@@ -6,14 +6,19 @@ from pydantic import BaseModel, Field
 from operator_api.config import OperatorApiConfig, load_operator_api_config
 from operator_api.services import (
     OperatorApiPaths,
+    apply_draft_headline_variant_selection,
     apply_draft_review_action,
+    apply_media_asset_review_action,
     apply_queue_review_action,
     apply_queue_schedule_action,
+    apply_social_package_variant_selection,
     apply_social_package_review_action,
     build_combined_health_payload,
     build_dashboard_payload,
     build_draft_detail_payload,
     build_draft_inbox_payload,
+    build_media_asset_detail_payload,
+    build_media_asset_inbox_payload,
     build_operator_validation_payload,
     build_queue_detail_payload,
     build_queue_inbox_payload,
@@ -32,6 +37,20 @@ class SocialPackageReviewRequest(BaseModel):
     review_outcome: str
     review_notes: list[str] = Field(default_factory=list)
     reviewer_label: str | None = None
+
+
+class MediaAssetReviewRequest(BaseModel):
+    review_outcome: str
+    review_notes: list[str] = Field(default_factory=list)
+    reviewer_label: str | None = None
+
+
+class DraftHeadlineVariantSelectionRequest(BaseModel):
+    headline_variant: str
+
+
+class SocialPackageVariantSelectionRequest(BaseModel):
+    variant_label: str
 
 
 class QueueApproveRequest(BaseModel):
@@ -88,8 +107,23 @@ def build_app(
         return build_dashboard_payload(paths=active_paths)
 
     @app.get("/drafts/inbox", dependencies=[Depends(require_shared_secret)])
-    def get_drafts_inbox() -> dict[str, object]:
-        return build_draft_inbox_payload(paths=active_paths)
+    def get_drafts_inbox(
+        search: str | None = None,
+        approval_state: str | None = None,
+        operator_signal: str | None = None,
+        source_domain: str | None = None,
+        template_id: str | None = None,
+        category: str | None = None,
+    ) -> dict[str, object]:
+        return build_draft_inbox_payload(
+            paths=active_paths,
+            search=search,
+            approval_state=approval_state,
+            operator_signal=operator_signal,
+            source_domain=source_domain,
+            template_id=template_id,
+            category=category,
+        )
 
     @app.get("/drafts/{draft_id}", dependencies=[Depends(require_shared_secret)])
     def get_draft_detail(draft_id: str) -> dict[str, object]:
@@ -107,9 +141,31 @@ def build_app(
             )
         )
 
+    @app.post("/drafts/{draft_id}/select-headline-variant", dependencies=[Depends(require_shared_secret)])
+    def select_draft_headline_variant(
+        draft_id: str,
+        request: DraftHeadlineVariantSelectionRequest,
+    ) -> dict[str, object]:
+        return _handle_value_error(
+            lambda: apply_draft_headline_variant_selection(
+                draft_id,
+                headline_variant=request.headline_variant,
+                paths=active_paths,
+            )
+        )
+
     @app.get("/social-packages/inbox", dependencies=[Depends(require_shared_secret)])
-    def get_social_packages_inbox() -> dict[str, object]:
-        return build_social_package_inbox_payload(paths=active_paths)
+    def get_social_packages_inbox(
+        search: str | None = None,
+        approval_state: str | None = None,
+        linkage_state: str | None = None,
+    ) -> dict[str, object]:
+        return build_social_package_inbox_payload(
+            paths=active_paths,
+            search=search,
+            approval_state=approval_state,
+            linkage_state=linkage_state,
+        )
 
     @app.get("/social-packages/{social_package_id}", dependencies=[Depends(require_shared_secret)])
     def get_social_package_detail(social_package_id: str) -> dict[str, object]:
@@ -132,9 +188,72 @@ def build_app(
             )
         )
 
+    @app.post(
+        "/social-packages/{social_package_id}/select-variant",
+        dependencies=[Depends(require_shared_secret)],
+    )
+    def select_social_package_variant(
+        social_package_id: str,
+        request: SocialPackageVariantSelectionRequest,
+    ) -> dict[str, object]:
+        return _handle_value_error(
+            lambda: apply_social_package_variant_selection(
+                social_package_id,
+                variant_label=request.variant_label,
+                paths=active_paths,
+            )
+        )
+
+    @app.get("/media-assets/inbox", dependencies=[Depends(require_shared_secret)])
+    def get_media_assets_inbox(
+        search: str | None = None,
+        approval_state: str | None = None,
+        asset_source_kind: str | None = None,
+    ) -> dict[str, object]:
+        return build_media_asset_inbox_payload(
+            paths=active_paths,
+            search=search,
+            approval_state=approval_state,
+            asset_source_kind=asset_source_kind,
+        )
+
+    @app.get("/media-assets/{asset_record_id}", dependencies=[Depends(require_shared_secret)])
+    def get_media_asset_detail(asset_record_id: str) -> dict[str, object]:
+        return _handle_value_error(
+            lambda: build_media_asset_detail_payload(asset_record_id, paths=active_paths)
+        )
+
+    @app.post("/media-assets/{asset_record_id}/review", dependencies=[Depends(require_shared_secret)])
+    def review_media_asset(
+        asset_record_id: str,
+        request: MediaAssetReviewRequest,
+    ) -> dict[str, object]:
+        return _handle_value_error(
+            lambda: apply_media_asset_review_action(
+                asset_record_id,
+                review_outcome=request.review_outcome,
+                review_notes=request.review_notes,
+                reviewer_label=request.reviewer_label or "operator_ui",
+                paths=active_paths,
+            )
+        )
+
     @app.get("/queue/inbox", dependencies=[Depends(require_shared_secret)])
-    def get_queue_inbox() -> dict[str, object]:
-        return build_queue_inbox_payload(paths=active_paths)
+    def get_queue_inbox(
+        queue_type: str | None = None,
+        queue_state: str | None = None,
+        queue_review_state: str | None = None,
+        blocked_only: bool = False,
+        schedule_allowed: bool | None = None,
+    ) -> dict[str, object]:
+        return build_queue_inbox_payload(
+            paths=active_paths,
+            queue_type=queue_type,
+            queue_state=queue_state,
+            queue_review_state=queue_review_state,
+            blocked_only=blocked_only,
+            schedule_allowed=schedule_allowed,
+        )
 
     @app.get("/queue/{queue_item_id}", dependencies=[Depends(require_shared_secret)])
     def get_queue_detail(queue_item_id: str) -> dict[str, object]:

@@ -86,12 +86,17 @@ Response groups:
 
 1. draft counts,
 2. social package counts,
-3. queue counts,
-4. transport and activation failures,
-5. recent review activity,
-6. current alerts,
-7. fast-lane placeholder,
-8. basic snapshot metadata.
+3. media-asset counts,
+4. queue counts,
+5. transport and activation failures,
+6. recent review activity,
+7. current alerts,
+8. priority draft items,
+9. priority social-package items,
+10. priority media-asset items,
+11. priority queue items,
+12. fast-lane placeholder,
+13. basic snapshot metadata.
 
 Recent review activity rows should also expose safe detail-target hints so the UI can deep-link to the relevant review surface without guessing from raw ids alone.
 
@@ -116,6 +121,15 @@ Each row should include:
 9. `approval_state`
 10. timestamps needed for ordering or review context.
 
+Supported query filters:
+
+1. `search`
+2. `approval_state`
+3. `operator_signal`
+4. `source_domain`
+5. `template_id`
+6. `category`
+
 ### `GET /drafts/{draft_id}`
 
 Purpose:
@@ -128,7 +142,9 @@ Required context:
 2. source lineage,
 3. review history,
 4. downstream linkage if present,
-5. fast-lane placeholder.
+5. linked media brief and asset summaries when present,
+6. read-only `ai_assistance_log` provenance when present,
+7. fast-lane placeholder.
 
 ### `POST /drafts/{draft_id}/review`
 
@@ -148,6 +164,19 @@ Behavior:
 2. append both the updated draft snapshot and draft review record,
 3. return the refreshed draft detail payload.
 
+### `POST /drafts/{draft_id}/select-headline-variant`
+
+Purpose:
+
+1. let the operator select one already-prepared headline variant without opening free-form editing.
+
+Behavior:
+
+1. only accept values that already exist in `headline_variants`,
+2. append a refreshed draft snapshot,
+3. re-run draft quality evaluation against the linked source item,
+4. reopen the draft to `pending_review` / `drafted` because the selected headline changed.
+
 ### `GET /social-packages/inbox`
 
 Purpose:
@@ -166,6 +195,12 @@ Each row should include:
 8. linkage state
 9. review timestamps
 
+Supported query filters:
+
+1. `search`
+2. `approval_state`
+3. `linkage_state`
+
 ### `GET /social-packages/{social_package_id}`
 
 Purpose:
@@ -176,9 +211,11 @@ Required context:
 
 1. latest package snapshot,
 2. linked blog publish snapshot when present,
-3. linked draft summary,
-4. review history,
-5. fast-lane placeholder.
+3. linked asset snapshot and readiness state when present,
+4. linked draft summary plus draft `ai_assistance_log`,
+5. social-package `ai_assistance_log`,
+6. review history,
+7. fast-lane placeholder.
 
 ### `POST /social-packages/{social_package_id}/review`
 
@@ -191,6 +228,74 @@ Behavior:
 1. use the same review logic as the CLI path,
 2. append updated social package and social review records,
 3. refresh queue and mapping snapshots when blog linkage exists,
+4. return the refreshed detail payload.
+
+### `POST /social-packages/{social_package_id}/select-variant`
+
+Purpose:
+
+1. let the operator switch among already-prepared social variants before final approval.
+
+Behavior:
+
+1. only accept values that already exist in the package `variant_options`,
+2. append a refreshed social-package snapshot,
+3. refresh queue and mapping snapshots when blog linkage exists,
+4. reopen approval to `pending_review` if the selected output changed after approval.
+
+### `GET /media-assets/inbox`
+
+Purpose:
+
+1. list reviewable media assets tied to approved draft, blog, and social context.
+
+Each row should include:
+
+1. `asset_record_id`
+2. `media_brief_id`
+3. draft, blog, and social linkage ids
+4. asset source kind
+5. approval state
+6. intended usage
+7. provenance reference
+8. linked blog title when present
+9. asset completeness state
+10. review timestamps
+
+Supported query filters:
+
+1. `search`
+2. `approval_state`
+3. `asset_source_kind`
+
+### `GET /media-assets/{asset_record_id}`
+
+Purpose:
+
+1. provide one review-complete media-asset detail payload.
+
+Required context:
+
+1. latest asset snapshot,
+2. linked media brief,
+3. linked draft summary,
+4. linked blog publish snapshot when present,
+5. linked social package snapshot when present,
+6. asset readiness state,
+7. review history,
+8. fast-lane placeholder.
+
+### `POST /media-assets/{asset_record_id}/review`
+
+Purpose:
+
+1. record append-only media asset review decisions.
+
+Behavior:
+
+1. use the same review logic as the CLI path,
+2. append updated asset and asset-review records,
+3. preserve provenance and publish-chain linkage,
 4. return the refreshed detail payload.
 
 ### `GET /queue/inbox`
@@ -206,13 +311,22 @@ Each row should include:
 3. title
 4. `queue_state`
 5. `queue_review_state`
-6. schedule context
-7. collision warnings
-8. linked blog and social identifiers
-9. `approve_allowed`
-10. `approve_block_reason`
-11. `schedule_allowed`
-12. `schedule_block_reason`
+6. linked asset readiness context
+7. schedule context
+8. collision warnings
+9. linked blog and social identifiers
+10. `approve_allowed`
+11. `approve_block_reason`
+12. `schedule_allowed`
+13. `schedule_block_reason`
+
+Supported query filters:
+
+1. `queue_type`
+2. `queue_state`
+3. `queue_review_state`
+4. `blocked_only`
+5. `schedule_allowed`
 
 ### `GET /queue/{queue_item_id}`
 
@@ -225,11 +339,12 @@ Required context:
 1. latest queue item snapshot,
 2. linked blog publish snapshot,
 3. linked social package snapshot when present,
-4. latest mapping snapshot when present,
-5. schedule context,
-6. review history,
-7. action availability context,
-8. fast-lane placeholder.
+4. linked asset snapshot and readiness state when present,
+5. latest mapping snapshot when present,
+6. schedule context,
+7. review history,
+8. action availability context,
+9. fast-lane placeholder.
 
 ### `POST /queue/{queue_item_id}/approve`
 
@@ -306,7 +421,7 @@ It should include:
 1. endpoint check results for the approval shell,
 2. workflow snapshot counts,
 3. record visibility counts,
-4. review-surface availability flags,
+4. review-surface availability flags, including media review,
 5. validation notes,
 6. combined health context.
 
@@ -321,6 +436,17 @@ Payload categories are:
 3. detail view payloads,
 4. action responses,
 5. combined health snapshot.
+
+## AI Provenance Rule
+
+The operator API may expose AI usage metadata as read-only provenance, but it must not expose provider-generation actions in this phase.
+
+Visible provenance is limited to:
+
+1. `skill_name`,
+2. `target_field`,
+3. `model_label`,
+4. `created_at`.
 
 ## Fast-Lane Rule
 
@@ -341,16 +467,17 @@ The Python-side baseline should prove:
 2. inbox endpoints reflect runtime state correctly,
 3. detail endpoints include review context,
 4. review endpoints append the expected records,
-5. queue schedule rules enforce the current architecture boundary,
-6. the combined health endpoint remains available for the operator shell,
-7. the validation endpoint remains available for the live WordPress-admin validation page.
+5. media review endpoints preserve provenance and linkage,
+6. queue schedule rules enforce the current architecture boundary,
+7. the combined health endpoint remains available for the operator shell,
+8. the validation endpoint remains available for the live WordPress-admin validation page.
 
 ## V1 Limits
 
 This API does not yet:
 
 1. expose public publishing shortcuts,
-2. expose media review,
+2. expose in-plugin media generation or asset-upload automation,
 3. expose analytics dashboards,
 4. expose autoapproval controls,
 5. replace live transport workflows.

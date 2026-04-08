@@ -11,6 +11,7 @@ requires-python = ">=3.11"
 dependencies = [
     "fastapi>=0.135.0,<1.0",
     "httpx>=0.28.0,<1.0",
+    "openai>=1.0,<2.0",
     "uvicorn>=0.43.0,<1.0",
 ]
 

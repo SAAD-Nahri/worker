@@ -2,7 +2,7 @@
 
 ## Purpose
 
-This document defines the first provider-backed prompt and output contracts for bounded micro-skills.
+This document defines the first provider-backed prompt and output contracts for bounded draft micro-skills and manual social-package refinement.
 
 ## Core Rule
 
@@ -11,7 +11,7 @@ Prompt contracts are slot contracts, not writing freedom.
 Each prompt must receive:
 
 1. source lineage,
-2. selected template,
+2. selected template or package family,
 3. target field,
 4. tone notes,
 5. prohibited patterns,
@@ -33,7 +33,7 @@ Output contract:
 
 1. return `2` to `5` standalone headline variants,
 2. preserve subject-anchor relevance,
-3. avoid weak “you won’t believe” style wording,
+3. avoid weak `you won't believe` style wording,
 4. do not output explanatory prose.
 
 ### 2. `generate_short_intro`
@@ -51,7 +51,7 @@ Output contract:
 1. return one intro only,
 2. stay within template-aware intro bounds,
 3. keep answer-first framing,
-4. do not introduce facts not supported by source/draft context.
+4. do not introduce facts not supported by source or draft context.
 
 ### 3. `generate_excerpt`
 
@@ -68,7 +68,27 @@ Output contract:
 2. stay within `20` to `50` words,
 3. keep the excerpt summary-like rather than promotional.
 
-### 4. Later `smooth_section_copy`
+### 4. `refine_social_package_variants`
+
+Input contract:
+
+1. current `hook_text`, `caption_text`, and `comment_cta_text`,
+2. package template family and comment template family,
+3. linked draft context,
+4. linked blog URL context when present,
+5. current variant labels,
+6. tone notes and prohibited patterns,
+7. hook, caption, and comment word bounds.
+
+Output contract:
+
+1. return only valid JSON with one key named `variants`,
+2. return `1` or `2` full package objects,
+3. each object must contain `hook_text`, `caption_text`, and `comment_cta_text`,
+4. keep the wording practical, non-clicky, source-grounded, and within the accepted package bounds,
+5. do not output commentary, hashtags, or field-by-field free edits.
+
+### 5. Later `smooth_section_copy`
 
 Input contract:
 
@@ -91,7 +111,8 @@ Provider output should be rejected or retried when:
 2. it becomes clicky or misleading,
 3. it loses the subject anchor,
 4. it introduces unsupported claims,
-5. it turns a bounded task into free-form generation.
+5. it turns a bounded task into free-form generation,
+6. it returns invalid JSON or incomplete package bundles for social refinement.
 
 ## Definition Of Done
 
@@ -100,4 +121,5 @@ This spec is satisfied when provider-backed skills can be implemented with:
 1. explicit input contracts,
 2. explicit output shapes,
 3. bounded failure handling,
-4. no ambiguity about what the model is allowed to do.
+4. retry-once behavior for weak output,
+5. no ambiguity about what the model is allowed to do.

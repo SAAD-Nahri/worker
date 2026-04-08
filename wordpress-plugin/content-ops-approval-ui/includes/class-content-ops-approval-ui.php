@@ -63,6 +63,14 @@ class Content_Ops_Approval_UI {
         );
         add_submenu_page(
             'content-ops-approval-dashboard',
+            __('Media Review', 'content-ops-approval-ui'),
+            __('Media Review', 'content-ops-approval-ui'),
+            self::REVIEW_CAPABILITY,
+            'content-ops-approval-media',
+            array($this, 'render_media_page')
+        );
+        add_submenu_page(
+            'content-ops-approval-dashboard',
             __('Queue Review', 'content-ops-approval-ui'),
             __('Queue Review', 'content-ops-approval-ui'),
             self::REVIEW_CAPABILITY,
@@ -143,6 +151,11 @@ class Content_Ops_Approval_UI {
             __('Needs edits', 'content-ops-approval-ui') => $payload['social_packages']['needs_edits_count'],
             __('Approved for queue', 'content-ops-approval-ui') => $payload['social_packages']['approved_for_queue_count'],
         ));
+        $this->render_metric_card(__('Media Review', 'content-ops-approval-ui'), array(
+            __('Pending review', 'content-ops-approval-ui') => $payload['media_assets']['pending_review_count'],
+            __('Needs edits', 'content-ops-approval-ui') => $payload['media_assets']['needs_edits_count'],
+            __('Approved', 'content-ops-approval-ui') => $payload['media_assets']['approved_count'],
+        ));
         $this->render_metric_card(__('Queue', 'content-ops-approval-ui'), array(
             __('Ready items', 'content-ops-approval-ui') => $payload['queue']['ready_items_count'],
             __('Schedule collisions', 'content-ops-approval-ui') => $payload['queue']['schedule_collision_count'],
@@ -164,6 +177,29 @@ class Content_Ops_Approval_UI {
         );
         echo '</div>';
 
+        echo '<div class="content-ops-dashboard-grid">';
+        $this->render_priority_review_list(
+            __('Review Now: Drafts', 'content-ops-approval-ui'),
+            isset($payload['priority_drafts']) ? $payload['priority_drafts'] : array(),
+            'draft'
+        );
+        $this->render_priority_review_list(
+            __('Review Now: Social Packages', 'content-ops-approval-ui'),
+            isset($payload['priority_social_packages']) ? $payload['priority_social_packages'] : array(),
+            'social_package'
+        );
+        $this->render_priority_review_list(
+            __('Review Now: Media Assets', 'content-ops-approval-ui'),
+            isset($payload['priority_media_assets']) ? $payload['priority_media_assets'] : array(),
+            'media_asset'
+        );
+        $this->render_priority_review_list(
+            __('Review Now: Queue', 'content-ops-approval-ui'),
+            isset($payload['priority_queue_items']) ? $payload['priority_queue_items'] : array(),
+            'queue_item'
+        );
+        echo '</div>';
+
         $this->render_fast_lane_card($payload['fast_lane']);
         $this->render_page_close();
     }
@@ -174,10 +210,11 @@ class Content_Ops_Approval_UI {
         }
 
         $this->handle_draft_submission();
+        $filters = $this->get_draft_filters_from_request();
         $draft_id = isset($_GET['draft_id']) ? sanitize_text_field(wp_unslash($_GET['draft_id'])) : '';
         $payload = $draft_id
             ? $this->api_request('GET', '/drafts/' . rawurlencode($draft_id))
-            : $this->api_request('GET', '/drafts/inbox');
+            : $this->api_request('GET', $this->build_api_path('/drafts/inbox', $filters));
 
         $this->render_page_open(__('Draft Review', 'content-ops-approval-ui'));
         $this->render_notice();
@@ -188,9 +225,9 @@ class Content_Ops_Approval_UI {
         }
 
         if ($draft_id) {
-            $this->render_draft_detail($payload);
+            $this->render_draft_detail($payload, $filters);
         } else {
-            $this->render_draft_inbox($payload);
+            $this->render_draft_inbox($payload, $filters);
         }
 
         $this->render_page_close();
@@ -202,10 +239,11 @@ class Content_Ops_Approval_UI {
         }
 
         $this->handle_social_submission();
+        $filters = $this->get_social_filters_from_request();
         $social_package_id = isset($_GET['social_package_id']) ? sanitize_text_field(wp_unslash($_GET['social_package_id'])) : '';
         $payload = $social_package_id
             ? $this->api_request('GET', '/social-packages/' . rawurlencode($social_package_id))
-            : $this->api_request('GET', '/social-packages/inbox');
+            : $this->api_request('GET', $this->build_api_path('/social-packages/inbox', $filters));
 
         $this->render_page_open(__('Social Package Review', 'content-ops-approval-ui'));
         $this->render_notice();
@@ -216,9 +254,38 @@ class Content_Ops_Approval_UI {
         }
 
         if ($social_package_id) {
-            $this->render_social_detail($payload);
+            $this->render_social_detail($payload, $filters);
         } else {
-            $this->render_social_inbox($payload);
+            $this->render_social_inbox($payload, $filters);
+        }
+
+        $this->render_page_close();
+    }
+
+    public function render_media_page() {
+        if (! current_user_can(self::REVIEW_CAPABILITY)) {
+            wp_die(esc_html__('You do not have permission to access this page.', 'content-ops-approval-ui'));
+        }
+
+        $this->handle_media_submission();
+        $filters = $this->get_media_filters_from_request();
+        $asset_record_id = isset($_GET['asset_record_id']) ? sanitize_text_field(wp_unslash($_GET['asset_record_id'])) : '';
+        $payload = $asset_record_id
+            ? $this->api_request('GET', '/media-assets/' . rawurlencode($asset_record_id))
+            : $this->api_request('GET', $this->build_api_path('/media-assets/inbox', $filters));
+
+        $this->render_page_open(__('Media Asset Review', 'content-ops-approval-ui'));
+        $this->render_notice();
+        if (is_wp_error($payload)) {
+            $this->render_api_error($payload);
+            $this->render_page_close();
+            return;
+        }
+
+        if ($asset_record_id) {
+            $this->render_media_detail($payload, $filters);
+        } else {
+            $this->render_media_inbox($payload, $filters);
         }
 
         $this->render_page_close();
@@ -230,10 +297,11 @@ class Content_Ops_Approval_UI {
         }
 
         $this->handle_queue_submission();
+        $filters = $this->get_queue_filters_from_request();
         $queue_item_id = isset($_GET['queue_item_id']) ? sanitize_text_field(wp_unslash($_GET['queue_item_id'])) : '';
         $payload = $queue_item_id
             ? $this->api_request('GET', '/queue/' . rawurlencode($queue_item_id))
-            : $this->api_request('GET', '/queue/inbox');
+            : $this->api_request('GET', $this->build_api_path('/queue/inbox', $filters));
 
         $this->render_page_open(__('Queue Review', 'content-ops-approval-ui'));
         $this->render_notice();
@@ -244,9 +312,9 @@ class Content_Ops_Approval_UI {
         }
 
         if ($queue_item_id) {
-            $this->render_queue_detail($payload);
+            $this->render_queue_detail($payload, $filters);
         } else {
-            $this->render_queue_inbox($payload);
+            $this->render_queue_inbox($payload, $filters);
         }
 
         $this->render_page_close();
@@ -319,6 +387,30 @@ class Content_Ops_Approval_UI {
         $draft_id = sanitize_text_field(wp_unslash($_POST['draft_id']));
         $outcome = sanitize_text_field(wp_unslash($_POST['review_outcome']));
         $note = sanitize_textarea_field(wp_unslash(isset($_POST['review_note']) ? $_POST['review_note'] : ''));
+        $selected_variant = sanitize_text_field(wp_unslash(isset($_POST['selected_headline_variant']) ? $_POST['selected_headline_variant'] : ''));
+        $current_headline = sanitize_text_field(wp_unslash(isset($_POST['current_headline_selected']) ? $_POST['current_headline_selected'] : ''));
+
+        if ('needs_edits' === $outcome && ! $this->has_actionable_note($note)) {
+            $this->store_result_notice(
+                new WP_Error(
+                    'content_ops_actionable_note_required',
+                    __('Needs Edits requires a short actionable note.', 'content-ops-approval-ui')
+                ),
+                ''
+            );
+            $this->redirect_back();
+        }
+
+        if ($selected_variant && $selected_variant !== $current_headline) {
+            $variant_response = $this->api_request('POST', '/drafts/' . rawurlencode($draft_id) . '/select-headline-variant', array(
+                'headline_variant' => $selected_variant,
+            ));
+            if (is_wp_error($variant_response)) {
+                $this->store_result_notice($variant_response, '');
+                $this->redirect_back();
+            }
+        }
+
         $response = $this->api_request('POST', '/drafts/' . rawurlencode($draft_id) . '/review', array(
             'review_outcome' => $outcome,
             'review_notes' => $note ? array($note) : array(),
@@ -339,6 +431,30 @@ class Content_Ops_Approval_UI {
         $social_package_id = sanitize_text_field(wp_unslash($_POST['social_package_id']));
         $outcome = sanitize_text_field(wp_unslash($_POST['review_outcome']));
         $note = sanitize_textarea_field(wp_unslash(isset($_POST['review_note']) ? $_POST['review_note'] : ''));
+        $selected_variant_label = sanitize_text_field(wp_unslash(isset($_POST['selected_variant_label']) ? $_POST['selected_variant_label'] : ''));
+        $current_variant_label = sanitize_text_field(wp_unslash(isset($_POST['current_variant_label']) ? $_POST['current_variant_label'] : ''));
+
+        if ('needs_edits' === $outcome && ! $this->has_actionable_note($note)) {
+            $this->store_result_notice(
+                new WP_Error(
+                    'content_ops_actionable_note_required',
+                    __('Needs Edits requires a short actionable note.', 'content-ops-approval-ui')
+                ),
+                ''
+            );
+            $this->redirect_back();
+        }
+
+        if ($selected_variant_label && $selected_variant_label !== $current_variant_label) {
+            $variant_response = $this->api_request('POST', '/social-packages/' . rawurlencode($social_package_id) . '/select-variant', array(
+                'variant_label' => $selected_variant_label,
+            ));
+            if (is_wp_error($variant_response)) {
+                $this->store_result_notice($variant_response, '');
+                $this->redirect_back();
+            }
+        }
+
         $response = $this->api_request('POST', '/social-packages/' . rawurlencode($social_package_id) . '/review', array(
             'review_outcome' => $outcome,
             'review_notes' => $note ? array($note) : array(),
@@ -362,6 +478,16 @@ class Content_Ops_Approval_UI {
         if ('queue_review' === $action) {
             $outcome = sanitize_text_field(wp_unslash($_POST['review_outcome']));
             $note = sanitize_textarea_field(wp_unslash(isset($_POST['review_note']) ? $_POST['review_note'] : ''));
+            if (in_array($outcome, array('hold', 'removed'), true) && ! $this->has_actionable_note($note)) {
+                $this->store_result_notice(
+                    new WP_Error(
+                        'content_ops_actionable_note_required',
+                        __('This queue action requires a short actionable note.', 'content-ops-approval-ui')
+                    ),
+                    ''
+                );
+                $this->redirect_back();
+            }
             $response = $this->api_request('POST', '/queue/' . rawurlencode($queue_item_id) . '/approve', array(
                 'review_outcome' => $outcome,
                 'review_notes' => $note ? array($note) : array(),
@@ -387,11 +513,44 @@ class Content_Ops_Approval_UI {
         }
     }
 
-    private function render_draft_inbox($payload) {
+    private function handle_media_submission() {
+        if ('POST' !== $_SERVER['REQUEST_METHOD']) {
+            return;
+        }
+        if (! isset($_POST['content_ops_action']) || 'media_review' !== sanitize_text_field(wp_unslash($_POST['content_ops_action']))) {
+            return;
+        }
+        check_admin_referer('content_ops_approval_action');
+        $asset_record_id = sanitize_text_field(wp_unslash($_POST['asset_record_id']));
+        $outcome = sanitize_text_field(wp_unslash($_POST['review_outcome']));
+        $note = sanitize_textarea_field(wp_unslash(isset($_POST['review_note']) ? $_POST['review_note'] : ''));
+
+        if (in_array($outcome, array('needs_edits', 'rejected'), true) && ! $this->has_actionable_note($note)) {
+            $this->store_result_notice(
+                new WP_Error(
+                    'content_ops_actionable_note_required',
+                    __('Media review needs a short actionable note for Needs Edits or Reject.', 'content-ops-approval-ui')
+                ),
+                ''
+            );
+            $this->redirect_back();
+        }
+
+        $response = $this->api_request('POST', '/media-assets/' . rawurlencode($asset_record_id) . '/review', array(
+            'review_outcome' => $outcome,
+            'review_notes' => $note ? array($note) : array(),
+            'reviewer_label' => $this->get_operator_label(),
+        ));
+        $this->store_result_notice($response, __('Media asset review saved.', 'content-ops-approval-ui'));
+        $this->redirect_back();
+    }
+
+    private function render_draft_inbox($payload, $filters) {
+        $this->render_draft_filter_bar($filters);
         echo '<p class="content-ops-muted">' . esc_html__('Human review remains required. Fast-lane scoring is visible later but disabled in this version.', 'content-ops-approval-ui') . '</p>';
         echo '<table class="widefat striped"><thead><tr>';
         echo '<th>' . esc_html__('Draft', 'content-ops-approval-ui') . '</th>';
-        echo '<th>' . esc_html__('Source', 'content-ops-approval-ui') . '</th>';
+        echo '<th>' . esc_html__('Source Kind', 'content-ops-approval-ui') . '</th>';
         echo '<th>' . esc_html__('Template', 'content-ops-approval-ui') . '</th>';
         echo '<th>' . esc_html__('Category', 'content-ops-approval-ui') . '</th>';
         echo '<th>' . esc_html__('Quality', 'content-ops-approval-ui') . '</th>';
@@ -402,8 +561,13 @@ class Content_Ops_Approval_UI {
         echo '</tr></thead><tbody>';
 
         foreach ($payload['rows'] as $row) {
+            $detail_url = $this->build_admin_page_url(
+                'content-ops-approval-drafts',
+                array('draft_id' => $row['draft_id']),
+                $this->get_draft_filter_keys()
+            );
             echo '<tr>';
-            echo '<td><strong>' . esc_html($row['draft_id']) . '</strong><br>' . esc_html($row['source_item_id']) . '</td>';
+            echo '<td><strong>' . esc_html($row['draft_id']) . '</strong><br><span class="content-ops-muted">' . esc_html($row['source_item_id']) . '</span><br><span class="content-ops-muted">' . esc_html($row['operator_signal']) . '</span></td>';
             echo '<td>' . esc_html($row['source_domain']) . '</td>';
             echo '<td>' . esc_html($row['template_id']) . '</td>';
             echo '<td>' . esc_html($row['category']) . '</td>';
@@ -412,10 +576,9 @@ class Content_Ops_Approval_UI {
             echo '<td>' . esc_html($row['routing_action']) . '</td>';
             echo '<td>' . esc_html($row['approval_state']) . '</td>';
             echo '<td class="content-ops-inline-actions">';
-            echo '<a class="button" href="' . esc_url(admin_url('admin.php?page=content-ops-approval-drafts&draft_id=' . rawurlencode($row['draft_id']))) . '">' . esc_html__('Open Detail', 'content-ops-approval-ui') . '</a>';
+            echo '<a class="button" href="' . esc_url($detail_url) . '">' . esc_html__('Open Detail', 'content-ops-approval-ui') . '</a>';
             $this->render_inline_review_form('draft_review', 'draft_id', $row['draft_id'], 'approved', '');
-            echo '<a class="button button-secondary" href="' . esc_url(admin_url('admin.php?page=content-ops-approval-drafts&draft_id=' . rawurlencode($row['draft_id']))) . '">' . esc_html__('Needs Edits', 'content-ops-approval-ui') . '</a>';
-            echo '<a class="button button-secondary" href="' . esc_url(admin_url('admin.php?page=content-ops-approval-drafts&draft_id=' . rawurlencode($row['draft_id']))) . '">' . esc_html__('Reject', 'content-ops-approval-ui') . '</a>';
+            $this->render_inline_note_review_form('draft_review', 'draft_id', $row['draft_id'], 'needs_edits', __('Needs Edits', 'content-ops-approval-ui'));
             echo '</td>';
             echo '</tr>';
         }
@@ -424,29 +587,36 @@ class Content_Ops_Approval_UI {
         $this->render_fast_lane_card($payload['fast_lane']);
     }
 
-    private function render_social_inbox($payload) {
+    private function render_social_inbox($payload, $filters) {
+        $this->render_social_filter_bar($filters);
         echo '<table class="widefat striped"><thead><tr>';
         echo '<th>' . esc_html__('Blog Title', 'content-ops-approval-ui') . '</th>';
         echo '<th>' . esc_html__('Hook', 'content-ops-approval-ui') . '</th>';
         echo '<th>' . esc_html__('Caption', 'content-ops-approval-ui') . '</th>';
         echo '<th>' . esc_html__('CTA', 'content-ops-approval-ui') . '</th>';
+        echo '<th>' . esc_html__('Variant', 'content-ops-approval-ui') . '</th>';
         echo '<th>' . esc_html__('Approval', 'content-ops-approval-ui') . '</th>';
         echo '<th>' . esc_html__('Linkage', 'content-ops-approval-ui') . '</th>';
         echo '<th>' . esc_html__('Actions', 'content-ops-approval-ui') . '</th>';
         echo '</tr></thead><tbody>';
         foreach ($payload['rows'] as $row) {
+            $detail_url = $this->build_admin_page_url(
+                'content-ops-approval-social',
+                array('social_package_id' => $row['social_package_id']),
+                $this->get_social_filter_keys()
+            );
             echo '<tr>';
-            echo '<td>' . esc_html((string) $row['linked_blog_title']) . '</td>';
+            echo '<td><strong>' . esc_html((string) $row['linked_blog_title']) . '</strong><br><span class="content-ops-muted">' . esc_html((string) $row['social_package_id']) . '</span></td>';
             echo '<td>' . esc_html($row['hook_text']) . '</td>';
             echo '<td>' . esc_html($row['caption_text']) . '</td>';
             echo '<td>' . esc_html($row['comment_cta_text']) . '</td>';
+            echo '<td>' . esc_html((string) $row['selected_variant_label']) . '</td>';
             echo '<td>' . esc_html($row['approval_state']) . '</td>';
             echo '<td>' . esc_html($row['linkage_state']) . '</td>';
             echo '<td class="content-ops-inline-actions">';
-            echo '<a class="button" href="' . esc_url(admin_url('admin.php?page=content-ops-approval-social&social_package_id=' . rawurlencode($row['social_package_id']))) . '">' . esc_html__('Open Detail', 'content-ops-approval-ui') . '</a>';
+            echo '<a class="button" href="' . esc_url($detail_url) . '">' . esc_html__('Open Detail', 'content-ops-approval-ui') . '</a>';
             $this->render_inline_review_form('social_review', 'social_package_id', $row['social_package_id'], 'approved', '');
-            echo '<a class="button button-secondary" href="' . esc_url(admin_url('admin.php?page=content-ops-approval-social&social_package_id=' . rawurlencode($row['social_package_id']))) . '">' . esc_html__('Needs Edits', 'content-ops-approval-ui') . '</a>';
-            echo '<a class="button button-secondary" href="' . esc_url(admin_url('admin.php?page=content-ops-approval-social&social_package_id=' . rawurlencode($row['social_package_id']))) . '">' . esc_html__('Reject', 'content-ops-approval-ui') . '</a>';
+            $this->render_inline_note_review_form('social_review', 'social_package_id', $row['social_package_id'], 'needs_edits', __('Needs Edits', 'content-ops-approval-ui'));
             echo '</td>';
             echo '</tr>';
         }
@@ -454,7 +624,52 @@ class Content_Ops_Approval_UI {
         $this->render_fast_lane_card($payload['fast_lane']);
     }
 
-    private function render_queue_inbox($payload) {
+    private function render_media_inbox($payload, $filters) {
+        $this->render_media_filter_bar($filters);
+        echo '<p class="content-ops-muted">' . esc_html__('This screen is for review-safe asset approval only. Media generation and upload still stay outside WordPress admin in this phase.', 'content-ops-approval-ui') . '</p>';
+        echo '<table class="widefat striped"><thead><tr>';
+        echo '<th>' . esc_html__('Asset', 'content-ops-approval-ui') . '</th>';
+        echo '<th>' . esc_html__('Source', 'content-ops-approval-ui') . '</th>';
+        echo '<th>' . esc_html__('Usage', 'content-ops-approval-ui') . '</th>';
+        echo '<th>' . esc_html__('Readiness', 'content-ops-approval-ui') . '</th>';
+        echo '<th>' . esc_html__('Provenance', 'content-ops-approval-ui') . '</th>';
+        echo '<th>' . esc_html__('Approval', 'content-ops-approval-ui') . '</th>';
+        echo '<th>' . esc_html__('Actions', 'content-ops-approval-ui') . '</th>';
+        echo '</tr></thead><tbody>';
+        foreach ($payload['rows'] as $row) {
+            $detail_url = $this->build_admin_page_url(
+                'content-ops-approval-media',
+                array('asset_record_id' => $row['asset_record_id']),
+                $this->get_media_filter_keys()
+            );
+            echo '<tr>';
+            $asset_title = ! empty($row['linked_blog_title']) ? (string) $row['linked_blog_title'] : (string) $row['asset_record_id'];
+            echo '<td><strong>' . esc_html($asset_title) . '</strong><br><span class="content-ops-muted">' . esc_html((string) $row['asset_record_id']) . '</span><br><span class="content-ops-muted">' . esc_html((string) $row['asset_url_or_path']) . '</span></td>';
+            echo '<td>' . esc_html((string) $row['asset_source_kind']) . '</td>';
+            echo '<td>' . esc_html((string) $row['intended_usage']) . '</td>';
+            echo '<td>';
+            echo ! empty($row['asset_complete'])
+                ? esc_html__('Ready', 'content-ops-approval-ui')
+                : esc_html__('Blocked', 'content-ops-approval-ui');
+            if (! empty($row['asset_block_reason'])) {
+                echo '<br><span class="content-ops-muted">' . esc_html((string) $row['asset_block_reason']) . '</span>';
+            }
+            echo '</td>';
+            echo '<td>' . esc_html((string) $row['provenance_reference']) . '</td>';
+            echo '<td>' . esc_html((string) $row['approval_state']) . '</td>';
+            echo '<td class="content-ops-inline-actions">';
+            echo '<a class="button" href="' . esc_url($detail_url) . '">' . esc_html__('Open Detail', 'content-ops-approval-ui') . '</a>';
+            $this->render_inline_review_form('media_review', 'asset_record_id', $row['asset_record_id'], 'approved', '');
+            $this->render_inline_note_review_form('media_review', 'asset_record_id', $row['asset_record_id'], 'needs_edits', __('Needs Edits', 'content-ops-approval-ui'));
+            echo '</td>';
+            echo '</tr>';
+        }
+        echo '</tbody></table>';
+        $this->render_fast_lane_card($payload['fast_lane']);
+    }
+
+    private function render_queue_inbox($payload, $filters) {
+        $this->render_queue_filter_bar($filters);
         echo '<table class="widefat striped"><thead><tr>';
         echo '<th>' . esc_html__('Title', 'content-ops-approval-ui') . '</th>';
         echo '<th>' . esc_html__('Queue Type', 'content-ops-approval-ui') . '</th>';
@@ -465,26 +680,34 @@ class Content_Ops_Approval_UI {
         echo '<th>' . esc_html__('Actions', 'content-ops-approval-ui') . '</th>';
         echo '</tr></thead><tbody>';
         foreach ($payload['rows'] as $row) {
+            $detail_url = $this->build_admin_page_url(
+                'content-ops-approval-queue',
+                array('queue_item_id' => $row['queue_item_id']),
+                $this->get_queue_filter_keys()
+            );
             echo '<tr>';
-            echo '<td>' . esc_html((string) $row['title']) . '</td>';
+            echo '<td><strong>' . esc_html((string) $row['title']) . '</strong><br><span class="content-ops-muted">' . esc_html((string) $row['queue_item_id']) . '</span></td>';
             echo '<td>' . esc_html($row['queue_type']) . '</td>';
             echo '<td>' . esc_html($row['queue_state']) . '</td>';
             echo '<td>' . esc_html($row['queue_review_state']) . '</td>';
             echo '<td>' . esc_html((string) $row['scheduled_for']) . '</td>';
-            echo '<td>' . esc_html(implode(', ', $row['collision_warnings'])) . '</td>';
+            echo '<td>';
+            echo esc_html(implode(', ', $row['collision_warnings']));
+            if (! empty($row['approve_block_reason'])) {
+                echo '<br><span class="content-ops-muted">' . esc_html($row['approve_block_reason']) . '</span>';
+            }
+            if (! empty($row['schedule_block_reason'])) {
+                echo '<br><span class="content-ops-muted">' . esc_html($row['schedule_block_reason']) . '</span>';
+            }
+            echo '</td>';
             echo '<td class="content-ops-inline-actions">';
-            echo '<a class="button" href="' . esc_url(admin_url('admin.php?page=content-ops-approval-queue&queue_item_id=' . rawurlencode($row['queue_item_id']))) . '">' . esc_html__('Open Detail', 'content-ops-approval-ui') . '</a>';
+            echo '<a class="button" href="' . esc_url($detail_url) . '">' . esc_html__('Open Detail', 'content-ops-approval-ui') . '</a>';
             if (! empty($row['approve_allowed'])) {
                 $this->render_inline_review_form('queue_review', 'queue_item_id', $row['queue_item_id'], 'approved', '');
-            } elseif (! empty($row['approve_block_reason'])) {
-                echo '<span class="content-ops-muted">' . esc_html($row['approve_block_reason']) . '</span>';
             }
-            echo '<a class="button button-secondary" href="' . esc_url(admin_url('admin.php?page=content-ops-approval-queue&queue_item_id=' . rawurlencode($row['queue_item_id']))) . '">' . esc_html__('Hold', 'content-ops-approval-ui') . '</a>';
-            echo '<a class="button button-secondary" href="' . esc_url(admin_url('admin.php?page=content-ops-approval-queue&queue_item_id=' . rawurlencode($row['queue_item_id']))) . '">' . esc_html__('Remove', 'content-ops-approval-ui') . '</a>';
+            $this->render_inline_note_review_form('queue_review', 'queue_item_id', $row['queue_item_id'], 'hold', __('Hold', 'content-ops-approval-ui'));
             if ('blog_publish' === $row['queue_type'] && ! empty($row['schedule_allowed'])) {
-                echo '<a class="button button-secondary" href="' . esc_url(admin_url('admin.php?page=content-ops-approval-queue&queue_item_id=' . rawurlencode($row['queue_item_id']))) . '">' . esc_html__('Set Schedule', 'content-ops-approval-ui') . '</a>';
-            } elseif ('blog_publish' === $row['queue_type'] && ! empty($row['schedule_block_reason'])) {
-                echo '<span class="content-ops-muted">' . esc_html($row['schedule_block_reason']) . '</span>';
+                echo '<a class="button button-secondary" href="' . esc_url($detail_url) . '">' . esc_html__('Set Schedule', 'content-ops-approval-ui') . '</a>';
             }
             echo '</td>';
             echo '</tr>';
@@ -493,9 +716,14 @@ class Content_Ops_Approval_UI {
         $this->render_fast_lane_card($payload['fast_lane']);
     }
 
-    private function render_draft_detail($payload) {
+    private function render_draft_detail($payload, $filters) {
         $draft = $payload['draft'];
-        echo '<a class="button" href="' . esc_url(admin_url('admin.php?page=content-ops-approval-drafts')) . '">' . esc_html__('Back to Draft Inbox', 'content-ops-approval-ui') . '</a>';
+        $back_url = $this->build_admin_page_url(
+            'content-ops-approval-drafts',
+            array(),
+            $this->get_draft_filter_keys()
+        );
+        echo '<a class="button" href="' . esc_url($back_url) . '">' . esc_html__('Back to Draft Inbox', 'content-ops-approval-ui') . '</a>';
         echo '<div class="content-ops-review-layout">';
         echo '<div class="content-ops-preview"><h2>' . esc_html($draft['headline_selected']) . '</h2>';
         echo '<p>' . esc_html($draft['intro_text']) . '</p>';
@@ -537,7 +765,13 @@ class Content_Ops_Approval_UI {
             __('Approval State', 'content-ops-approval-ui') => $draft['approval_state'],
             __('Blog Publish ID', 'content-ops-approval-ui') => isset($payload['downstream']['blog_publish_id']) ? $payload['downstream']['blog_publish_id'] : '',
             __('Social Package ID', 'content-ops-approval-ui') => isset($payload['downstream']['social_package_id']) ? $payload['downstream']['social_package_id'] : '',
+            __('Media Brief ID', 'content-ops-approval-ui') => isset($payload['downstream']['media_brief_id']) ? $payload['downstream']['media_brief_id'] : '',
+            __('Asset Record ID', 'content-ops-approval-ui') => isset($payload['downstream']['asset_record_id']) ? $payload['downstream']['asset_record_id'] : '',
+            __('Asset Readiness', 'content-ops-approval-ui') => ! empty($payload['downstream']['asset_complete']) ? __('Ready', 'content-ops-approval-ui') : __('Blocked', 'content-ops-approval-ui'),
         ));
+        if (! empty($payload['downstream']['asset_block_reason'])) {
+            echo '<p class="content-ops-muted">' . esc_html((string) $payload['downstream']['asset_block_reason']) . '</p>';
+        }
         if (! empty($payload['source_lineage']['source_url'])) {
             $this->render_link_block(
                 __('Source URL', 'content-ops-approval-ui'),
@@ -545,15 +779,27 @@ class Content_Ops_Approval_UI {
                 __('Open Source', 'content-ops-approval-ui')
             );
         }
-        $this->render_review_form('draft_review', 'draft_id', $draft['draft_id']);
+        if (! empty($payload['linked_asset'])) {
+            echo '<p><a class="button button-secondary" href="' . esc_url($this->build_admin_page_url('content-ops-approval-media', array('asset_record_id' => $payload['linked_asset']['asset_record_id']))) . '">' . esc_html__('Open Linked Asset', 'content-ops-approval-ui') . '</a></p>';
+        }
+        $this->render_ai_assistance_log(
+            __('Draft AI Usage', 'content-ops-approval-ui'),
+            isset($draft['ai_assistance_log']) ? $draft['ai_assistance_log'] : array()
+        );
+        $this->render_draft_detail_review_form($draft);
         $this->render_history_list($payload['review_history']);
         echo '</aside></div>';
         $this->render_fast_lane_card($payload['fast_lane']);
     }
 
-    private function render_social_detail($payload) {
+    private function render_social_detail($payload, $filters) {
         $package = $payload['social_package'];
-        echo '<a class="button" href="' . esc_url(admin_url('admin.php?page=content-ops-approval-social')) . '">' . esc_html__('Back to Social Inbox', 'content-ops-approval-ui') . '</a>';
+        $back_url = $this->build_admin_page_url(
+            'content-ops-approval-social',
+            array(),
+            $this->get_social_filter_keys()
+        );
+        echo '<a class="button" href="' . esc_url($back_url) . '">' . esc_html__('Back to Social Inbox', 'content-ops-approval-ui') . '</a>';
         echo '<div class="content-ops-review-layout">';
         echo '<div class="content-ops-preview">';
         echo '<h2>' . esc_html__('Social Package Preview', 'content-ops-approval-ui') . '</h2>';
@@ -583,16 +829,106 @@ class Content_Ops_Approval_UI {
             __('Draft Template', 'content-ops-approval-ui') => ! empty($payload['linked_draft']) ? $payload['linked_draft']['template_id'] : '',
             __('Draft Category', 'content-ops-approval-ui') => ! empty($payload['linked_draft']) ? $payload['linked_draft']['category'] : '',
             __('Blog Publish ID', 'content-ops-approval-ui') => ! empty($payload['linked_blog_publish']) ? $payload['linked_blog_publish']['blog_publish_id'] : '',
+            __('Asset Record ID', 'content-ops-approval-ui') => ! empty($payload['linked_asset']) ? $payload['linked_asset']['asset_record_id'] : '',
+            __('Asset Readiness', 'content-ops-approval-ui') => ! empty($payload['asset_readiness']['asset_complete']) ? __('Ready', 'content-ops-approval-ui') : __('Blocked', 'content-ops-approval-ui'),
         ));
-        $this->render_review_form('social_review', 'social_package_id', $package['social_package_id']);
+        if (! empty($payload['asset_readiness']['asset_block_reason'])) {
+            echo '<p class="content-ops-muted">' . esc_html((string) $payload['asset_readiness']['asset_block_reason']) . '</p>';
+        }
+        if (! empty($payload['linked_asset'])) {
+            echo '<p><a class="button button-secondary" href="' . esc_url($this->build_admin_page_url('content-ops-approval-media', array('asset_record_id' => $payload['linked_asset']['asset_record_id']))) . '">' . esc_html__('Open Linked Asset', 'content-ops-approval-ui') . '</a></p>';
+        }
+        $this->render_ai_assistance_log(
+            __('Social AI Usage', 'content-ops-approval-ui'),
+            isset($package['ai_assistance_log']) ? $package['ai_assistance_log'] : array()
+        );
+        $this->render_ai_assistance_log(
+            __('Linked Draft AI Usage', 'content-ops-approval-ui'),
+            ! empty($payload['linked_draft']) && isset($payload['linked_draft']['ai_assistance_log'])
+                ? $payload['linked_draft']['ai_assistance_log']
+                : array()
+        );
+        $this->render_social_detail_review_form($package);
         $this->render_history_list($payload['review_history']);
         echo '</aside></div>';
         $this->render_fast_lane_card($payload['fast_lane']);
     }
 
-    private function render_queue_detail($payload) {
+    private function render_media_detail($payload, $filters) {
+        $asset = $payload['asset_record'];
+        $back_url = $this->build_admin_page_url(
+            'content-ops-approval-media',
+            array(),
+            $this->get_media_filter_keys()
+        );
+        echo '<a class="button" href="' . esc_url($back_url) . '">' . esc_html__('Back to Media Inbox', 'content-ops-approval-ui') . '</a>';
+        echo '<div class="content-ops-review-layout">';
+        echo '<div class="content-ops-preview">';
+        echo '<h2>' . esc_html__('Media Asset Detail', 'content-ops-approval-ui') . '</h2>';
+        echo '<p><strong>' . esc_html__('Asset path or URL', 'content-ops-approval-ui') . ':</strong> ' . esc_html($asset['asset_url_or_path']) . '</p>';
+        echo '<p><strong>' . esc_html__('Alt text', 'content-ops-approval-ui') . ':</strong> ' . esc_html($asset['alt_text']) . '</p>';
+        if (! empty($asset['caption_support_text'])) {
+            echo '<p><strong>' . esc_html__('Caption support', 'content-ops-approval-ui') . ':</strong> ' . esc_html($asset['caption_support_text']) . '</p>';
+        }
+        if ($this->is_http_url(isset($asset['asset_url_or_path']) ? $asset['asset_url_or_path'] : '')) {
+            echo '<p><a class="button button-secondary" href="' . esc_url($asset['asset_url_or_path']) . '" target="_blank" rel="noopener noreferrer">' . esc_html__('Open Asset', 'content-ops-approval-ui') . '</a></p>';
+        }
+        if (! empty($payload['linked_media_brief'])) {
+            echo '<h3>' . esc_html__('Linked Media Brief', 'content-ops-approval-ui') . '</h3>';
+            echo '<p><strong>' . esc_html__('Goal', 'content-ops-approval-ui') . ':</strong> ' . esc_html($payload['linked_media_brief']['brief_goal']) . '</p>';
+            echo '<p><strong>' . esc_html__('Subject focus', 'content-ops-approval-ui') . ':</strong> ' . esc_html($payload['linked_media_brief']['subject_focus']) . '</p>';
+            echo '<p><strong>' . esc_html__('Alt text seed', 'content-ops-approval-ui') . ':</strong> ' . esc_html($payload['linked_media_brief']['alt_text_seed']) . '</p>';
+            if (! empty($payload['linked_media_brief']['visual_style_notes'])) {
+                echo '<p><strong>' . esc_html__('Style notes', 'content-ops-approval-ui') . ':</strong> ' . esc_html(implode(', ', $payload['linked_media_brief']['visual_style_notes'])) . '</p>';
+            }
+            if (! empty($payload['linked_media_brief']['prohibited_visual_patterns'])) {
+                echo '<p><strong>' . esc_html__('Avoid', 'content-ops-approval-ui') . ':</strong> ' . esc_html(implode(', ', $payload['linked_media_brief']['prohibited_visual_patterns'])) . '</p>';
+            }
+        }
+        if (! empty($payload['linked_blog_publish'])) {
+            echo '<h3>' . esc_html__('Linked Blog', 'content-ops-approval-ui') . '</h3>';
+            echo '<p>' . esc_html($payload['linked_blog_publish']['wordpress_title']) . '</p>';
+            if (! empty($payload['linked_blog_publish']['wordpress_post_url'])) {
+                echo '<p><a href="' . esc_url($payload['linked_blog_publish']['wordpress_post_url']) . '" target="_blank" rel="noopener noreferrer">' . esc_html__('Open Blog URL', 'content-ops-approval-ui') . '</a></p>';
+            }
+        }
+        if (! empty($payload['linked_social_package'])) {
+            echo '<h3>' . esc_html__('Linked Social Package', 'content-ops-approval-ui') . '</h3>';
+            echo '<p><strong>' . esc_html__('Hook', 'content-ops-approval-ui') . ':</strong> ' . esc_html($payload['linked_social_package']['hook_text']) . '</p>';
+            echo '<p><strong>' . esc_html__('Caption', 'content-ops-approval-ui') . ':</strong> ' . esc_html($payload['linked_social_package']['caption_text']) . '</p>';
+        }
+        echo '</div><aside class="content-ops-sidebar">';
+        $this->render_meta_list(array(
+            __('Approval State', 'content-ops-approval-ui') => $asset['approval_state'],
+            __('Asset Source', 'content-ops-approval-ui') => $asset['asset_source_kind'],
+            __('Intended Usage', 'content-ops-approval-ui') => $asset['intended_usage'],
+            __('Readiness', 'content-ops-approval-ui') => ! empty($payload['asset_readiness']['asset_complete']) ? __('Ready', 'content-ops-approval-ui') : __('Blocked', 'content-ops-approval-ui'),
+            __('Block Reason', 'content-ops-approval-ui') => isset($payload['asset_readiness']['asset_block_reason']) ? $payload['asset_readiness']['asset_block_reason'] : '',
+            __('Draft ID', 'content-ops-approval-ui') => isset($payload['linked_draft']['draft_id']) ? $payload['linked_draft']['draft_id'] : '',
+            __('Blog Publish ID', 'content-ops-approval-ui') => ! empty($payload['linked_blog_publish']) ? $payload['linked_blog_publish']['blog_publish_id'] : '',
+            __('Social Package ID', 'content-ops-approval-ui') => ! empty($payload['linked_social_package']) ? $payload['linked_social_package']['social_package_id'] : '',
+            __('Media Brief ID', 'content-ops-approval-ui') => $asset['media_brief_id'],
+        ));
+        if (! empty($payload['linked_draft'])) {
+            echo '<p><a class="button button-secondary" href="' . esc_url($this->build_admin_page_url('content-ops-approval-drafts', array('draft_id' => $payload['linked_draft']['draft_id']))) . '">' . esc_html__('Open Linked Draft', 'content-ops-approval-ui') . '</a></p>';
+        }
+        if (! empty($payload['linked_social_package'])) {
+            echo '<p><a class="button button-secondary" href="' . esc_url($this->build_admin_page_url('content-ops-approval-social', array('social_package_id' => $payload['linked_social_package']['social_package_id']))) . '">' . esc_html__('Open Linked Social Package', 'content-ops-approval-ui') . '</a></p>';
+        }
+        $this->render_review_form('media_review', 'asset_record_id', $asset['asset_record_id']);
+        $this->render_history_list($payload['review_history']);
+        echo '</aside></div>';
+        $this->render_fast_lane_card($payload['fast_lane']);
+    }
+
+    private function render_queue_detail($payload, $filters) {
         $queue_item = $payload['queue_item'];
-        echo '<a class="button" href="' . esc_url(admin_url('admin.php?page=content-ops-approval-queue')) . '">' . esc_html__('Back to Queue Inbox', 'content-ops-approval-ui') . '</a>';
+        $back_url = $this->build_admin_page_url(
+            'content-ops-approval-queue',
+            array(),
+            $this->get_queue_filter_keys()
+        );
+        echo '<a class="button" href="' . esc_url($back_url) . '">' . esc_html__('Back to Queue Inbox', 'content-ops-approval-ui') . '</a>';
         echo '<div class="content-ops-review-layout">';
         echo '<div class="content-ops-preview">';
         echo '<h2>' . esc_html__('Queue Detail', 'content-ops-approval-ui') . '</h2>';
@@ -629,7 +965,15 @@ class Content_Ops_Approval_UI {
             __('Blog Publish ID', 'content-ops-approval-ui') => $queue_item['blog_publish_id'],
             __('Social Package ID', 'content-ops-approval-ui') => $queue_item['social_package_id'],
             __('Mapping ID', 'content-ops-approval-ui') => ! empty($payload['linked_mapping']) ? $payload['linked_mapping']['mapping_id'] : '',
+            __('Asset Record ID', 'content-ops-approval-ui') => ! empty($payload['linked_asset']) ? $payload['linked_asset']['asset_record_id'] : '',
+            __('Asset Readiness', 'content-ops-approval-ui') => ! empty($payload['asset_readiness']['asset_complete']) ? __('Ready', 'content-ops-approval-ui') : __('Blocked', 'content-ops-approval-ui'),
         ));
+        if (! empty($payload['asset_readiness']['asset_block_reason'])) {
+            echo '<p class="content-ops-muted">' . esc_html((string) $payload['asset_readiness']['asset_block_reason']) . '</p>';
+        }
+        if (! empty($payload['linked_asset'])) {
+            echo '<p><a class="button button-secondary" href="' . esc_url($this->build_admin_page_url('content-ops-approval-media', array('asset_record_id' => $payload['linked_asset']['asset_record_id']))) . '">' . esc_html__('Open Linked Asset', 'content-ops-approval-ui') . '</a></p>';
+        }
         if (! empty($payload['allowed_actions']['approve']) || ! empty($payload['allowed_actions']['hold']) || ! empty($payload['allowed_actions']['remove'])) {
             $this->render_review_form(
                 'queue_review',
@@ -651,6 +995,385 @@ class Content_Ops_Approval_UI {
         $this->render_history_list($payload['review_history']);
         echo '</aside></div>';
         $this->render_fast_lane_card($payload['fast_lane']);
+    }
+
+    private function render_priority_review_list($title, $rows, $target_type) {
+        echo '<div class="content-ops-card">';
+        echo '<h2>' . esc_html($title) . '</h2>';
+        if (empty($rows)) {
+            echo '<p class="content-ops-muted">' . esc_html__('No urgent items are queued right now.', 'content-ops-approval-ui') . '</p>';
+            echo '</div>';
+            return;
+        }
+
+        echo '<ul class="content-ops-priority-list">';
+        foreach ($rows as $row) {
+            $detail_url = $this->build_priority_link($target_type, isset($row['detail_target_id']) ? $row['detail_target_id'] : '');
+            echo '<li class="content-ops-priority-item">';
+            if ($detail_url) {
+                echo '<a class="content-ops-priority-link" href="' . esc_url($detail_url) . '">' . esc_html((string) $row['title']) . '</a>';
+            } else {
+                echo '<span class="content-ops-priority-link">' . esc_html((string) $row['title']) . '</span>';
+            }
+            if (! empty($row['subtitle'])) {
+                echo '<div class="content-ops-muted">' . esc_html((string) $row['subtitle']) . '</div>';
+            }
+            echo '<div class="content-ops-priority-meta">';
+            if ('draft' === $target_type) {
+                echo '<span class="content-ops-pill">' . esc_html((string) $row['operator_signal']) . '</span> ';
+                echo '<span class="content-ops-pill">' . esc_html((string) $row['approval_state']) . '</span>';
+            } elseif ('social_package' === $target_type) {
+                echo '<span class="content-ops-pill">' . esc_html((string) $row['linkage_state']) . '</span> ';
+                echo '<span class="content-ops-pill">' . esc_html((string) $row['approval_state']) . '</span>';
+            } elseif ('media_asset' === $target_type) {
+                echo '<span class="content-ops-pill">' . esc_html((string) $row['approval_state']) . '</span> ';
+                echo '<span class="content-ops-pill">' . esc_html(! empty($row['asset_complete']) ? __('Ready', 'content-ops-approval-ui') : __('Blocked', 'content-ops-approval-ui')) . '</span>';
+            } else {
+                echo '<span class="content-ops-pill">' . esc_html((string) $row['queue_state']) . '</span> ';
+                echo '<span class="content-ops-pill">' . esc_html((string) $row['queue_review_state']) . '</span>';
+            }
+            echo '</div>';
+            echo '</li>';
+        }
+        echo '</ul>';
+        echo '</div>';
+    }
+
+    private function render_draft_filter_bar($filters) {
+        echo '<form class="content-ops-filter-bar" method="get">';
+        echo '<input type="hidden" name="page" value="content-ops-approval-drafts">';
+        echo '<input type="search" name="search" value="' . esc_attr(isset($filters['search']) ? $filters['search'] : '') . '" placeholder="' . esc_attr__('Search drafts', 'content-ops-approval-ui') . '">';
+        $this->render_select_input(
+            'approval_state',
+            isset($filters['approval_state']) ? $filters['approval_state'] : '',
+            array(
+                '' => __('All approval states', 'content-ops-approval-ui'),
+                'pending_review' => __('Pending review', 'content-ops-approval-ui'),
+                'needs_edits' => __('Needs edits', 'content-ops-approval-ui'),
+                'approved' => __('Approved', 'content-ops-approval-ui'),
+                'rejected' => __('Rejected', 'content-ops-approval-ui'),
+            )
+        );
+        $this->render_select_input(
+            'operator_signal',
+            isset($filters['operator_signal']) ? $filters['operator_signal'] : '',
+            array(
+                '' => __('All operator signals', 'content-ops-approval-ui'),
+                'ready_for_review' => __('Ready for review', 'content-ops-approval-ui'),
+                'review_flag_pending' => __('Review flag pending', 'content-ops-approval-ui'),
+                'needs_revision' => __('Needs revision', 'content-ops-approval-ui'),
+                'blocked_quality' => __('Blocked quality', 'content-ops-approval-ui'),
+                'approved_ready_for_phase_3' => __('Approved ready forward', 'content-ops-approval-ui'),
+                'approved_with_review_flags' => __('Approved with flags', 'content-ops-approval-ui'),
+            )
+        );
+        echo '<input type="text" name="source_domain" value="' . esc_attr(isset($filters['source_domain']) ? $filters['source_domain'] : '') . '" placeholder="' . esc_attr__('Source domain', 'content-ops-approval-ui') . '">';
+        echo '<input type="text" name="template_id" value="' . esc_attr(isset($filters['template_id']) ? $filters['template_id'] : '') . '" placeholder="' . esc_attr__('Template ID', 'content-ops-approval-ui') . '">';
+        echo '<input type="text" name="category" value="' . esc_attr(isset($filters['category']) ? $filters['category'] : '') . '" placeholder="' . esc_attr__('Category', 'content-ops-approval-ui') . '">';
+        echo '<button class="button button-secondary" type="submit">' . esc_html__('Filter', 'content-ops-approval-ui') . '</button>';
+        echo '<a class="button" href="' . esc_url($this->build_admin_page_url('content-ops-approval-drafts')) . '">' . esc_html__('Clear', 'content-ops-approval-ui') . '</a>';
+        echo '</form>';
+    }
+
+    private function render_social_filter_bar($filters) {
+        echo '<form class="content-ops-filter-bar" method="get">';
+        echo '<input type="hidden" name="page" value="content-ops-approval-social">';
+        echo '<input type="search" name="search" value="' . esc_attr(isset($filters['search']) ? $filters['search'] : '') . '" placeholder="' . esc_attr__('Search social packages', 'content-ops-approval-ui') . '">';
+        $this->render_select_input(
+            'approval_state',
+            isset($filters['approval_state']) ? $filters['approval_state'] : '',
+            array(
+                '' => __('All approval states', 'content-ops-approval-ui'),
+                'pending_review' => __('Pending review', 'content-ops-approval-ui'),
+                'needs_edits' => __('Needs edits', 'content-ops-approval-ui'),
+                'approved' => __('Approved', 'content-ops-approval-ui'),
+                'rejected' => __('Rejected', 'content-ops-approval-ui'),
+            )
+        );
+        $this->render_select_input(
+            'linkage_state',
+            isset($filters['linkage_state']) ? $filters['linkage_state'] : '',
+            array(
+                '' => __('All linkage states', 'content-ops-approval-ui'),
+                'unlinked' => __('Unlinked', 'content-ops-approval-ui'),
+                'packaging_pending_review' => __('Packaging pending review', 'content-ops-approval-ui'),
+                'ready_for_social_review' => __('Ready for social review', 'content-ops-approval-ui'),
+                'approved_for_queue' => __('Approved for queue', 'content-ops-approval-ui'),
+                'facebook_publish_failed' => __('Facebook publish failed', 'content-ops-approval-ui'),
+            )
+        );
+        echo '<button class="button button-secondary" type="submit">' . esc_html__('Filter', 'content-ops-approval-ui') . '</button>';
+        echo '<a class="button" href="' . esc_url($this->build_admin_page_url('content-ops-approval-social')) . '">' . esc_html__('Clear', 'content-ops-approval-ui') . '</a>';
+        echo '</form>';
+    }
+
+    private function render_media_filter_bar($filters) {
+        echo '<form class="content-ops-filter-bar" method="get">';
+        echo '<input type="hidden" name="page" value="content-ops-approval-media">';
+        echo '<input type="search" name="search" value="' . esc_attr(isset($filters['search']) ? $filters['search'] : '') . '" placeholder="' . esc_attr__('Search media assets', 'content-ops-approval-ui') . '">';
+        $this->render_select_input(
+            'approval_state',
+            isset($filters['approval_state']) ? $filters['approval_state'] : '',
+            array(
+                '' => __('All approval states', 'content-ops-approval-ui'),
+                'pending_review' => __('Pending review', 'content-ops-approval-ui'),
+                'needs_edits' => __('Needs edits', 'content-ops-approval-ui'),
+                'approved' => __('Approved', 'content-ops-approval-ui'),
+                'rejected' => __('Rejected', 'content-ops-approval-ui'),
+            )
+        );
+        $this->render_select_input(
+            'asset_source_kind',
+            isset($filters['asset_source_kind']) ? $filters['asset_source_kind'] : '',
+            array(
+                '' => __('All source kinds', 'content-ops-approval-ui'),
+                'owned' => __('Owned', 'content-ops-approval-ui'),
+                'licensed' => __('Licensed', 'content-ops-approval-ui'),
+                'ai_generated' => __('AI generated', 'content-ops-approval-ui'),
+            )
+        );
+        echo '<button class="button button-secondary" type="submit">' . esc_html__('Filter', 'content-ops-approval-ui') . '</button>';
+        echo '<a class="button" href="' . esc_url($this->build_admin_page_url('content-ops-approval-media')) . '">' . esc_html__('Clear', 'content-ops-approval-ui') . '</a>';
+        echo '</form>';
+    }
+
+    private function render_queue_filter_bar($filters) {
+        echo '<form class="content-ops-filter-bar" method="get">';
+        echo '<input type="hidden" name="page" value="content-ops-approval-queue">';
+        $this->render_select_input(
+            'queue_type',
+            isset($filters['queue_type']) ? $filters['queue_type'] : '',
+            array(
+                '' => __('All queue types', 'content-ops-approval-ui'),
+                'blog_publish' => __('Blog publish', 'content-ops-approval-ui'),
+                'facebook_publish' => __('Facebook publish', 'content-ops-approval-ui'),
+            )
+        );
+        echo '<input type="text" name="queue_state" value="' . esc_attr(isset($filters['queue_state']) ? $filters['queue_state'] : '') . '" placeholder="' . esc_attr__('Queue state', 'content-ops-approval-ui') . '">';
+        $this->render_select_input(
+            'queue_review_state',
+            isset($filters['queue_review_state']) ? $filters['queue_review_state'] : '',
+            array(
+                '' => __('All review states', 'content-ops-approval-ui'),
+                'pending_review' => __('Pending review', 'content-ops-approval-ui'),
+                'approved' => __('Approved', 'content-ops-approval-ui'),
+                'needs_edits' => __('Needs edits', 'content-ops-approval-ui'),
+                'removed' => __('Removed', 'content-ops-approval-ui'),
+            )
+        );
+        $this->render_select_input(
+            'schedule_allowed',
+            isset($filters['schedule_allowed']) ? $filters['schedule_allowed'] : '',
+            array(
+                '' => __('Any schedule state', 'content-ops-approval-ui'),
+                'true' => __('Schedule allowed', 'content-ops-approval-ui'),
+                'false' => __('Schedule blocked', 'content-ops-approval-ui'),
+            )
+        );
+        echo '<label class="content-ops-checkbox"><input type="checkbox" name="blocked_only" value="true" ' . checked(isset($filters['blocked_only']) ? $filters['blocked_only'] : '', 'true', false) . '> ' . esc_html__('Blocked only', 'content-ops-approval-ui') . '</label>';
+        echo '<button class="button button-secondary" type="submit">' . esc_html__('Filter', 'content-ops-approval-ui') . '</button>';
+        echo '<a class="button" href="' . esc_url($this->build_admin_page_url('content-ops-approval-queue')) . '">' . esc_html__('Clear', 'content-ops-approval-ui') . '</a>';
+        echo '</form>';
+    }
+
+    private function render_draft_detail_review_form($draft) {
+        echo '<form class="content-ops-review-form" method="post">';
+        wp_nonce_field('content_ops_approval_action');
+        echo '<input type="hidden" name="content_ops_action" value="draft_review">';
+        echo '<input type="hidden" name="draft_id" value="' . esc_attr($draft['draft_id']) . '">';
+        echo '<input type="hidden" name="current_headline_selected" value="' . esc_attr((string) $draft['headline_selected']) . '">';
+        if (! empty($draft['headline_variants']) && is_array($draft['headline_variants'])) {
+            echo '<h3>' . esc_html__('Headline Variant', 'content-ops-approval-ui') . '</h3>';
+            echo '<div class="content-ops-option-list">';
+            foreach ($draft['headline_variants'] as $index => $variant) {
+                $field_id = 'content_ops_draft_variant_' . absint($index);
+                echo '<label class="content-ops-option-card" for="' . esc_attr($field_id) . '">';
+                echo '<input type="radio" id="' . esc_attr($field_id) . '" name="selected_headline_variant" value="' . esc_attr((string) $variant) . '" ' . checked((string) $draft['headline_selected'], (string) $variant, false) . '>';
+                echo '<span>' . esc_html((string) $variant) . '</span>';
+                echo '</label>';
+            }
+            echo '</div>';
+        } else {
+            echo '<input type="hidden" name="selected_headline_variant" value="' . esc_attr((string) $draft['headline_selected']) . '">';
+        }
+        echo '<p><label for="content_ops_draft_review_note">' . esc_html__('Review Note', 'content-ops-approval-ui') . '</label></p>';
+        echo '<p><textarea rows="4" name="review_note" id="content_ops_draft_review_note"></textarea></p>';
+        echo '<p class="content-ops-inline-actions">';
+        echo '<button class="button button-primary" type="submit" name="review_outcome" value="approved">' . esc_html__('Approve Draft', 'content-ops-approval-ui') . '</button>';
+        echo '<button class="button" type="submit" name="review_outcome" value="needs_edits">' . esc_html__('Needs Edits', 'content-ops-approval-ui') . '</button>';
+        echo '<button class="button button-secondary" type="submit" name="review_outcome" value="rejected">' . esc_html__('Reject', 'content-ops-approval-ui') . '</button>';
+        echo '</p></form>';
+    }
+
+    private function render_social_detail_review_form($package) {
+        echo '<form class="content-ops-review-form" method="post">';
+        wp_nonce_field('content_ops_approval_action');
+        echo '<input type="hidden" name="content_ops_action" value="social_review">';
+        echo '<input type="hidden" name="social_package_id" value="' . esc_attr($package['social_package_id']) . '">';
+        echo '<input type="hidden" name="current_variant_label" value="' . esc_attr((string) $package['selected_variant_label']) . '">';
+        if (! empty($package['variant_options']) && is_array($package['variant_options'])) {
+            echo '<h3>' . esc_html__('Prepared Variant', 'content-ops-approval-ui') . '</h3>';
+            echo '<div class="content-ops-option-list">';
+            foreach ($package['variant_options'] as $index => $variant) {
+                $field_id = 'content_ops_social_variant_' . absint($index);
+                $label = isset($variant['label']) ? (string) $variant['label'] : '';
+                echo '<label class="content-ops-option-card" for="' . esc_attr($field_id) . '">';
+                echo '<input type="radio" id="' . esc_attr($field_id) . '" name="selected_variant_label" value="' . esc_attr($label) . '" ' . checked((string) $package['selected_variant_label'], $label, false) . '>';
+                echo '<strong>' . esc_html($label) . '</strong>';
+                echo '<span><strong>' . esc_html__('Hook', 'content-ops-approval-ui') . ':</strong> ' . esc_html(isset($variant['hook_text']) ? (string) $variant['hook_text'] : '') . '</span>';
+                echo '<span><strong>' . esc_html__('Caption', 'content-ops-approval-ui') . ':</strong> ' . esc_html(isset($variant['caption_text']) ? (string) $variant['caption_text'] : '') . '</span>';
+                echo '<span><strong>' . esc_html__('CTA', 'content-ops-approval-ui') . ':</strong> ' . esc_html(isset($variant['comment_cta_text']) ? (string) $variant['comment_cta_text'] : '') . '</span>';
+                echo '</label>';
+            }
+            echo '</div>';
+        } else {
+            echo '<input type="hidden" name="selected_variant_label" value="' . esc_attr((string) $package['selected_variant_label']) . '">';
+        }
+        echo '<p><label for="content_ops_social_review_note">' . esc_html__('Review Note', 'content-ops-approval-ui') . '</label></p>';
+        echo '<p><textarea rows="4" name="review_note" id="content_ops_social_review_note"></textarea></p>';
+        echo '<p class="content-ops-inline-actions">';
+        echo '<button class="button button-primary" type="submit" name="review_outcome" value="approved">' . esc_html__('Approve Package', 'content-ops-approval-ui') . '</button>';
+        echo '<button class="button" type="submit" name="review_outcome" value="needs_edits">' . esc_html__('Needs Edits', 'content-ops-approval-ui') . '</button>';
+        echo '<button class="button button-secondary" type="submit" name="review_outcome" value="rejected">' . esc_html__('Reject', 'content-ops-approval-ui') . '</button>';
+        echo '</p></form>';
+    }
+
+    private function render_inline_note_review_form($action, $id_key, $id_value, $outcome, $button_label) {
+        $field_id = 'content_ops_note_' . md5($action . '|' . $id_value . '|' . $outcome);
+        echo '<form class="content-ops-inline-note-form" method="post">';
+        wp_nonce_field('content_ops_approval_action');
+        echo '<input type="hidden" name="content_ops_action" value="' . esc_attr($action) . '">';
+        echo '<input type="hidden" name="' . esc_attr($id_key) . '" value="' . esc_attr($id_value) . '">';
+        echo '<input type="hidden" name="review_outcome" value="' . esc_attr($outcome) . '">';
+        echo '<label class="screen-reader-text" for="' . esc_attr($field_id) . '">' . esc_html__('Action note', 'content-ops-approval-ui') . '</label>';
+        echo '<input class="regular-text" type="text" name="review_note" id="' . esc_attr($field_id) . '" placeholder="' . esc_attr__('Short actionable note', 'content-ops-approval-ui') . '">';
+        echo '<button class="button" type="submit">' . esc_html($button_label) . '</button>';
+        echo '</form>';
+    }
+
+    private function render_select_input($name, $selected_value, $options) {
+        echo '<select name="' . esc_attr($name) . '">';
+        foreach ($options as $value => $label) {
+            echo '<option value="' . esc_attr((string) $value) . '" ' . selected((string) $selected_value, (string) $value, false) . '>' . esc_html((string) $label) . '</option>';
+        }
+        echo '</select>';
+    }
+
+    private function build_api_path($path, $filters = array()) {
+        $query = array();
+        foreach ((array) $filters as $key => $value) {
+            if (null === $value || '' === $value) {
+                continue;
+            }
+            $query[$key] = $value;
+        }
+
+        if (empty($query)) {
+            return $path;
+        }
+
+        return $path . '?' . http_build_query($query, '', '&', PHP_QUERY_RFC3986);
+    }
+
+    private function build_admin_page_url($page, $extra_args = array(), $filter_keys = array()) {
+        $args = array('page' => $page);
+        foreach ((array) $filter_keys as $filter_key) {
+            if (! isset($_GET[$filter_key])) {
+                continue;
+            }
+            $value = sanitize_text_field(wp_unslash($_GET[$filter_key]));
+            if ('' === $value) {
+                continue;
+            }
+            $args[$filter_key] = $value;
+        }
+        foreach ((array) $extra_args as $key => $value) {
+            if (null === $value || '' === $value) {
+                continue;
+            }
+            $args[$key] = $value;
+        }
+        return add_query_arg($args, admin_url('admin.php'));
+    }
+
+    private function build_priority_link($target_type, $detail_target_id) {
+        if (! $detail_target_id) {
+            return '';
+        }
+        if ('draft' === $target_type) {
+            return $this->build_admin_page_url('content-ops-approval-drafts', array('draft_id' => $detail_target_id));
+        }
+        if ('social_package' === $target_type) {
+            return $this->build_admin_page_url('content-ops-approval-social', array('social_package_id' => $detail_target_id));
+        }
+        if ('media_asset' === $target_type) {
+            return $this->build_admin_page_url('content-ops-approval-media', array('asset_record_id' => $detail_target_id));
+        }
+        if ('queue_item' === $target_type) {
+            return $this->build_admin_page_url('content-ops-approval-queue', array('queue_item_id' => $detail_target_id));
+        }
+        return '';
+    }
+
+    private function get_draft_filter_keys() {
+        return array('search', 'approval_state', 'operator_signal', 'source_domain', 'template_id', 'category');
+    }
+
+    private function get_social_filter_keys() {
+        return array('search', 'approval_state', 'linkage_state');
+    }
+
+    private function get_media_filter_keys() {
+        return array('search', 'approval_state', 'asset_source_kind');
+    }
+
+    private function get_queue_filter_keys() {
+        return array('queue_type', 'queue_state', 'queue_review_state', 'blocked_only', 'schedule_allowed');
+    }
+
+    private function get_draft_filters_from_request() {
+        return array(
+            'search' => isset($_GET['search']) ? sanitize_text_field(wp_unslash($_GET['search'])) : '',
+            'approval_state' => isset($_GET['approval_state']) ? sanitize_text_field(wp_unslash($_GET['approval_state'])) : '',
+            'operator_signal' => isset($_GET['operator_signal']) ? sanitize_text_field(wp_unslash($_GET['operator_signal'])) : '',
+            'source_domain' => isset($_GET['source_domain']) ? sanitize_text_field(wp_unslash($_GET['source_domain'])) : '',
+            'template_id' => isset($_GET['template_id']) ? sanitize_text_field(wp_unslash($_GET['template_id'])) : '',
+            'category' => isset($_GET['category']) ? sanitize_text_field(wp_unslash($_GET['category'])) : '',
+        );
+    }
+
+    private function get_social_filters_from_request() {
+        return array(
+            'search' => isset($_GET['search']) ? sanitize_text_field(wp_unslash($_GET['search'])) : '',
+            'approval_state' => isset($_GET['approval_state']) ? sanitize_text_field(wp_unslash($_GET['approval_state'])) : '',
+            'linkage_state' => isset($_GET['linkage_state']) ? sanitize_text_field(wp_unslash($_GET['linkage_state'])) : '',
+        );
+    }
+
+    private function get_media_filters_from_request() {
+        return array(
+            'search' => isset($_GET['search']) ? sanitize_text_field(wp_unslash($_GET['search'])) : '',
+            'approval_state' => isset($_GET['approval_state']) ? sanitize_text_field(wp_unslash($_GET['approval_state'])) : '',
+            'asset_source_kind' => isset($_GET['asset_source_kind']) ? sanitize_text_field(wp_unslash($_GET['asset_source_kind'])) : '',
+        );
+    }
+
+    private function get_queue_filters_from_request() {
+        return array(
+            'queue_type' => isset($_GET['queue_type']) ? sanitize_text_field(wp_unslash($_GET['queue_type'])) : '',
+            'queue_state' => isset($_GET['queue_state']) ? sanitize_text_field(wp_unslash($_GET['queue_state'])) : '',
+            'queue_review_state' => isset($_GET['queue_review_state']) ? sanitize_text_field(wp_unslash($_GET['queue_review_state'])) : '',
+            'blocked_only' => isset($_GET['blocked_only']) ? sanitize_text_field(wp_unslash($_GET['blocked_only'])) : '',
+            'schedule_allowed' => isset($_GET['schedule_allowed']) ? sanitize_text_field(wp_unslash($_GET['schedule_allowed'])) : '',
+        );
+    }
+
+    private function has_actionable_note($note) {
+        $normalized = trim(wp_strip_all_tags((string) $note));
+        if (strlen($normalized) < 8) {
+            return false;
+        }
+        return str_word_count($normalized) >= 2;
     }
 
     private function render_metric_card($title, $metrics) {
@@ -685,6 +1408,7 @@ class Content_Ops_Approval_UI {
                 __('Validation status', 'content-ops-approval-ui') => isset($payload['status']) ? $payload['status'] : '',
                 __('Draft rows visible', 'content-ops-approval-ui') => isset($payload['record_counts']['draft_rows']) ? $payload['record_counts']['draft_rows'] : 0,
                 __('Social rows visible', 'content-ops-approval-ui') => isset($payload['record_counts']['social_package_rows']) ? $payload['record_counts']['social_package_rows'] : 0,
+                __('Media rows visible', 'content-ops-approval-ui') => isset($payload['record_counts']['media_asset_rows']) ? $payload['record_counts']['media_asset_rows'] : 0,
                 __('Queue rows visible', 'content-ops-approval-ui') => isset($payload['record_counts']['queue_rows']) ? $payload['record_counts']['queue_rows'] : 0,
                 __('Activation signal', 'content-ops-approval-ui') => isset($payload['workflow_snapshot']['activation_signal']) ? $payload['workflow_snapshot']['activation_signal'] : '',
             ));
@@ -693,6 +1417,7 @@ class Content_Ops_Approval_UI {
                 __('Validation status', 'content-ops-approval-ui') => __('Unavailable', 'content-ops-approval-ui'),
                 __('Draft rows visible', 'content-ops-approval-ui') => __('Unknown', 'content-ops-approval-ui'),
                 __('Social rows visible', 'content-ops-approval-ui') => __('Unknown', 'content-ops-approval-ui'),
+                __('Media rows visible', 'content-ops-approval-ui') => __('Unknown', 'content-ops-approval-ui'),
                 __('Queue rows visible', 'content-ops-approval-ui') => __('Unknown', 'content-ops-approval-ui'),
                 __('Activation signal', 'content-ops-approval-ui') => __('Unknown', 'content-ops-approval-ui'),
             ));
@@ -741,6 +1466,7 @@ class Content_Ops_Approval_UI {
         echo '<li>' . esc_html__('Open Dashboard and confirm counts, recent activity links, and alert links load without backend errors.', 'content-ops-approval-ui') . '</li>';
         echo '<li>' . esc_html__('Open one draft detail, approve it or mark it needs edits, and confirm the success notice appears.', 'content-ops-approval-ui') . '</li>';
         echo '<li>' . esc_html__('Open one social-package detail, submit a review action, and confirm the queue state refreshes.', 'content-ops-approval-ui') . '</li>';
+        echo '<li>' . esc_html__('Open one media-asset detail, submit a review action, and confirm linked asset readiness updates safely.', 'content-ops-approval-ui') . '</li>';
         echo '<li>' . esc_html__('Open one queue detail, verify blocked approve reasons show when applicable, and verify eligible queue items can still be approved.', 'content-ops-approval-ui') . '</li>';
         echo '<li>' . esc_html__('Open one queue item that is schedule-eligible and confirm the blog schedule form submits successfully.', 'content-ops-approval-ui') . '</li>';
         echo '<li>' . esc_html__('Temporarily break the API URL or secret and confirm the plugin shows a safe admin error instead of a blank page.', 'content-ops-approval-ui') . '</li>';
@@ -884,6 +1610,9 @@ class Content_Ops_Approval_UI {
         if ('social_package' === $row['detail_target_type']) {
             return admin_url('admin.php?page=content-ops-approval-social&social_package_id=' . rawurlencode((string) $row['detail_target_id']));
         }
+        if ('media_asset' === $row['detail_target_type']) {
+            return admin_url('admin.php?page=content-ops-approval-media&asset_record_id=' . rawurlencode((string) $row['detail_target_id']));
+        }
         if ('queue_item' === $row['detail_target_type']) {
             return admin_url('admin.php?page=content-ops-approval-queue&queue_item_id=' . rawurlencode((string) $row['detail_target_id']));
         }
@@ -911,6 +1640,37 @@ class Content_Ops_Approval_UI {
             echo esc_html(isset($row['reviewed_at']) ? $row['reviewed_at'] : '');
             if (! empty($row['review_notes'])) {
                 echo ': ' . esc_html(implode(' | ', $row['review_notes']));
+            }
+            echo '</li>';
+        }
+        echo '</ul>';
+    }
+
+    private function render_ai_assistance_log($title, $entries) {
+        echo '<h3>' . esc_html($title) . '</h3>';
+        if (empty($entries) || ! is_array($entries)) {
+            echo '<p class="content-ops-muted">' . esc_html__('No AI assistance recorded.', 'content-ops-approval-ui') . '</p>';
+            return;
+        }
+        echo '<ul class="content-ops-history-list content-ops-ai-log-list">';
+        foreach ($entries as $entry) {
+            if (! is_array($entry)) {
+                continue;
+            }
+            $skill_name = isset($entry['skill_name']) ? (string) $entry['skill_name'] : '';
+            $target_field = isset($entry['target_field']) ? (string) $entry['target_field'] : '';
+            $model_label = isset($entry['model_label']) ? (string) $entry['model_label'] : '';
+            $created_at = isset($entry['created_at']) ? (string) $entry['created_at'] : '';
+            echo '<li>';
+            echo '<strong>' . esc_html($skill_name) . '</strong>';
+            if ($target_field) {
+                echo '<br><span>' . esc_html__('Target:', 'content-ops-approval-ui') . ' ' . esc_html($target_field) . '</span>';
+            }
+            if ($model_label) {
+                echo '<br><span>' . esc_html__('Model:', 'content-ops-approval-ui') . ' ' . esc_html($model_label) . '</span>';
+            }
+            if ($created_at) {
+                echo '<br><span class="content-ops-muted">' . esc_html($created_at) . '</span>';
             }
             echo '</li>';
         }
@@ -982,6 +1742,11 @@ class Content_Ops_Approval_UI {
 
     private function render_page_close() {
         echo '</div>';
+    }
+
+    private function is_http_url($value) {
+        $normalized = trim((string) $value);
+        return 0 === strpos($normalized, 'http://') || 0 === strpos($normalized, 'https://');
     }
 
     private function api_request($method, $path, $body = null) {

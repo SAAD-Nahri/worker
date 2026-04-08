@@ -28,6 +28,8 @@ from distribution_engine.storage import (
     append_social_package_review_records,
 )
 from distribution_engine.workflow import prepare_distribution_linkage_records
+from media_engine.models import AssetRecord
+from media_engine.storage import append_asset_records
 
 
 def _build_blog_publish_record(
@@ -133,6 +135,35 @@ def _build_facebook_publish_record(
     )
 
 
+def _build_asset_record(
+    asset_record_id: str,
+    *,
+    draft_id: str,
+    blog_publish_id: str | None,
+    social_package_id: str | None,
+    approval_state: str,
+    asset_source_kind: str = "licensed",
+    intended_usage: str = "blog_and_facebook",
+    updated_at: str = "2026-04-03T12:18:00+00:00",
+) -> AssetRecord:
+    return AssetRecord(
+        asset_record_id=asset_record_id,
+        media_brief_id=f"brief-{asset_record_id}",
+        draft_id=draft_id,
+        blog_publish_id=blog_publish_id,
+        social_package_id=social_package_id,
+        asset_source_kind=asset_source_kind,
+        provenance_reference=f"provenance:{asset_record_id}",
+        approval_state=approval_state,
+        intended_usage=intended_usage,
+        asset_url_or_path=f"https://cdn.example.com/{asset_record_id}.jpg",
+        alt_text=f"Alt text for {asset_record_id}",
+        caption_support_text="Approved supporting caption.",
+        created_at=updated_at,
+        updated_at=updated_at,
+    )
+
+
 class DistributionHealthTests(unittest.TestCase):
     def test_build_distribution_health_report_aggregates_latest_distribution_state(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -140,6 +171,7 @@ class DistributionHealthTests(unittest.TestCase):
             blog_path = root / "blog_publish_records.jsonl"
             social_path = root / "social_package_records.jsonl"
             review_path = root / "social_package_reviews.jsonl"
+            asset_path = root / "asset_records.jsonl"
             facebook_path = root / "facebook_publish_records.jsonl"
             queue_path = root / "queue_item_records.jsonl"
             mapping_path = root / "blog_facebook_mapping_records.jsonl"
@@ -248,6 +280,16 @@ class DistributionHealthTests(unittest.TestCase):
             )
             append_facebook_publish_records([published_facebook, failed_facebook], path=facebook_path)
 
+            approved_asset = _build_asset_record(
+                "asset-approved-1",
+                draft_id="draft-1",
+                blog_publish_id="blog-published-1",
+                social_package_id=approved_social_final.social_package_id,
+                approval_state="approved",
+                updated_at="2026-04-03T12:18:00+00:00",
+            )
+            append_asset_records([approved_asset], path=asset_path)
+
             row1_blog_queue, row1_fb_queue, row1_mapping = prepare_distribution_linkage_records(
                 published_blog,
                 social_package_record=approved_social_final,
@@ -274,6 +316,7 @@ class DistributionHealthTests(unittest.TestCase):
                 blog_publish_records_path=blog_path,
                 social_package_records_path=social_path,
                 social_package_reviews_path=review_path,
+                asset_records_path=asset_path,
                 facebook_publish_records_path=facebook_path,
                 queue_item_records_path=queue_path,
                 mapping_records_path=mapping_path,
@@ -285,10 +328,14 @@ class DistributionHealthTests(unittest.TestCase):
             self.assertEqual(summary.social_approval_counts["approved"], 1)
             self.assertEqual(summary.social_approval_counts["pending_review"], 1)
             self.assertEqual(summary.social_approval_counts["none"], 1)
+            self.assertEqual(summary.asset_approval_counts["approved"], 1)
+            self.assertEqual(summary.asset_approval_counts["none"], 2)
             self.assertEqual(summary.facebook_publish_status_counts["published"], 1)
             self.assertEqual(summary.facebook_publish_status_counts["failed"], 1)
             self.assertEqual(summary.facebook_publish_status_counts["none"], 1)
             self.assertEqual(summary.blog_chains_with_social_package, 2)
+            self.assertEqual(summary.blog_chains_with_asset_record, 1)
+            self.assertEqual(summary.blog_chains_asset_complete, 1)
             self.assertEqual(summary.blog_chains_with_remote_wordpress_post, 3)
             self.assertEqual(summary.blog_chains_with_confirmed_blog_url, 2)
             self.assertEqual(summary.blog_chains_with_facebook_post_id, 1)
@@ -298,6 +345,7 @@ class DistributionHealthTests(unittest.TestCase):
 
             row_by_id = {row.blog_publish_id: row for row in rows}
             self.assertEqual(row_by_id["blog-published-1"].operator_signal, "published_facebook")
+            self.assertTrue(row_by_id["blog-published-1"].asset_complete)
             self.assertEqual(row_by_id["blog-published-1"].social_review_count, 2)
             self.assertEqual(row_by_id["blog-published-1"].latest_social_review_outcome, "approved")
             self.assertEqual(row_by_id["blog-published-1"].consistency_issues, ())
@@ -334,11 +382,77 @@ class DistributionHealthTests(unittest.TestCase):
             self.assertEqual(rows[0].mapping_status, None)
             self.assertEqual(rows[0].consistency_issues, ("missing_workflow_state",))
 
+    def test_build_distribution_health_report_surfaces_asset_review_pending_before_social_queue(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            blog_path = root / "blog_publish_records.jsonl"
+            social_path = root / "social_package_records.jsonl"
+            asset_path = root / "asset_records.jsonl"
+            queue_path = root / "queue_item_records.jsonl"
+            mapping_path = root / "blog_facebook_mapping_records.jsonl"
+
+            published_blog = _build_blog_publish_record(
+                "blog-asset-pending",
+                draft_id="draft-asset-pending",
+                source_item_id="source-asset-pending",
+                title="Why Oil Turns Cloudy",
+                wordpress_status="published",
+                wordpress_post_id="wp-501",
+                wordpress_post_url="https://blog.example.com/oil-cloudy",
+                published_at_blog="2026-04-03T12:25:00+00:00",
+                updated_at="2026-04-03T12:25:00+00:00",
+            )
+            append_blog_publish_records([published_blog], path=blog_path)
+
+            approved_social = _build_social_package_record(
+                "social-asset-pending",
+                draft_id="draft-asset-pending",
+                blog_publish_id=published_blog.blog_publish_id,
+                approval_state="approved",
+                updated_at="2026-04-03T12:26:00+00:00",
+            )
+            append_social_package_records([approved_social], path=social_path)
+
+            pending_asset = _build_asset_record(
+                "asset-pending-review",
+                draft_id="draft-asset-pending",
+                blog_publish_id=published_blog.blog_publish_id,
+                social_package_id=approved_social.social_package_id,
+                approval_state="pending_review",
+                updated_at="2026-04-03T12:26:30+00:00",
+            )
+            append_asset_records([pending_asset], path=asset_path)
+
+            blog_queue, facebook_queue, mapping = prepare_distribution_linkage_records(
+                published_blog,
+                social_package_record=approved_social,
+                facebook_publish_record=None,
+                created_at="2026-04-03T12:27:00+00:00",
+            )
+            append_queue_item_records([blog_queue, facebook_queue], path=queue_path)
+            append_blog_facebook_mapping_records([mapping], path=mapping_path)
+
+            summary, rows = build_distribution_health_report(
+                blog_publish_records_path=blog_path,
+                social_package_records_path=social_path,
+                asset_records_path=asset_path,
+                queue_item_records_path=queue_path,
+                mapping_records_path=mapping_path,
+            )
+
+            self.assertEqual(summary.operator_signal_counts["asset_review_pending"], 1)
+            self.assertEqual(len(rows), 1)
+            self.assertEqual(rows[0].operator_signal, "asset_review_pending")
+            self.assertFalse(rows[0].asset_complete)
+            self.assertEqual(rows[0].asset_approval_state, "pending_review")
+            self.assertEqual(rows[0].asset_block_reason, "Linked media asset is still pending_review.")
+
     def test_build_distribution_health_report_detects_schedule_collisions_and_schedule_order_issues(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             root = Path(temp_dir)
             blog_path = root / "blog_publish_records.jsonl"
             social_path = root / "social_package_records.jsonl"
+            asset_path = root / "asset_records.jsonl"
             facebook_path = root / "facebook_publish_records.jsonl"
             queue_path = root / "queue_item_records.jsonl"
             mapping_path = root / "blog_facebook_mapping_records.jsonl"
@@ -413,6 +527,32 @@ class DistributionHealthTests(unittest.TestCase):
             )
             append_social_package_records([social_a, social_b, social_c], path=social_path)
 
+            asset_a = _build_asset_record(
+                "asset-scheduled-a",
+                draft_id="draft-scheduled-a",
+                blog_publish_id="blog-scheduled-a",
+                social_package_id=social_a.social_package_id,
+                approval_state="approved",
+                updated_at="2026-04-03T13:04:10+00:00",
+            )
+            asset_b = _build_asset_record(
+                "asset-scheduled-b",
+                draft_id="draft-scheduled-b",
+                blog_publish_id="blog-scheduled-b",
+                social_package_id=social_b.social_package_id,
+                approval_state="approved",
+                updated_at="2026-04-03T13:04:20+00:00",
+            )
+            asset_c = _build_asset_record(
+                "asset-scheduled-c",
+                draft_id="draft-scheduled-c",
+                blog_publish_id="blog-scheduled-c",
+                social_package_id=social_c.social_package_id,
+                approval_state="approved",
+                updated_at="2026-04-03T13:04:30+00:00",
+            )
+            append_asset_records([asset_a, asset_b, asset_c], path=asset_path)
+
             facebook_a = _build_facebook_publish_record(
                 "fb-scheduled-a",
                 social_package_id=social_a.social_package_id,
@@ -466,6 +606,7 @@ class DistributionHealthTests(unittest.TestCase):
             summary, rows = build_distribution_health_report(
                 blog_publish_records_path=blog_path,
                 social_package_records_path=social_path,
+                asset_records_path=asset_path,
                 facebook_publish_records_path=facebook_path,
                 queue_item_records_path=queue_path,
                 mapping_records_path=mapping_path,

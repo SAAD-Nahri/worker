@@ -20,10 +20,13 @@ Phase 4.9 should answer:
 3. does the dashboard surface recent review and alert context instead of counts alone,
 4. does the plugin fail safely when backend auth or connectivity fails,
 5. does the UI preserve the existing approval boundaries,
-6. does the queue UI hide blocked review actions and explain why,
-7. can the dashboard move the operator into the correct detail screen without guesswork,
-8. does the dedicated Validation page make live admin verification easier and less error-prone,
-9. does the plugin warn clearly when the configured Operator API URL is only locally reachable and therefore unusable from hosted WordPress.
+6. does media review stay visibly linked to draft, blog, and social context without becoming a media manager,
+7. does the queue UI hide blocked review actions and explain why,
+8. can the dashboard move the operator into the correct detail screen without guesswork,
+9. does the dedicated Validation page make live admin verification easier and less error-prone,
+10. does the plugin warn clearly when the configured Operator API URL is only locally reachable and therefore unusable from hosted WordPress,
+11. do inbox filters and quick actions make review materially faster without breaking append-only rules,
+12. do prepared variant-selection actions reopen review safely when selected output changes.
 
 ## Required Validation Baseline
 
@@ -49,9 +52,13 @@ Because the local repo environment does not currently include PHP CLI or a WordP
 4. dashboard load,
 5. draft review submission,
 6. social review submission,
-7. queue review submission,
-8. blog queue schedule submission,
-9. safe admin-notice display on backend failure.
+7. media review submission,
+8. queue review submission,
+9. blog queue schedule submission,
+10. filter-state preservation between inbox and detail pages,
+11. draft headline-variant switching on detail submit,
+12. social variant switching on detail submit,
+13. safe admin-notice display on backend failure.
 
 ### 4. Acceptance scenarios
 
@@ -60,15 +67,19 @@ Before closeout, one live admin session should prove:
 1. one draft can be approved from the plugin,
 2. one draft can be marked `needs_edits` with note,
 3. one social package can be approved,
-4. one queue item can be held,
-5. one queue item can be removed from the current batch,
-6. one blog queue item can be scheduled,
-7. one failed queue item shows an approve block reason instead of a false action path,
-8. dashboard activity and alert links open the correct review detail screen,
-9. the Validation page shows green backend checks before manual review begins,
-10. fast-lane UI stays visible but disabled,
-11. runtime history still shows the decision trail afterward,
-12. hosted WordPress deployments do not rely on accidental localhost assumptions.
+4. one media asset can be approved or marked `needs_edits` with note,
+5. one queue item can be held,
+6. one queue item can be removed from the current batch,
+7. one blog queue item can be scheduled,
+8. one failed queue item shows an approve block reason instead of a false action path,
+9. dashboard activity and alert links open the correct review detail screen,
+10. the Validation page shows green backend checks before manual review begins,
+11. fast-lane UI stays visible but disabled,
+12. one filtered inbox flow preserves context when returning from detail,
+13. one draft headline variant can be changed and approved in the same review pass,
+14. one social variant can be changed and approved in the same review pass,
+15. runtime history still shows the decision trail afterward,
+16. hosted WordPress deployments do not rely on accidental localhost assumptions.
 
 ## Acceptance Evidence
 

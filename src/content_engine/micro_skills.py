@@ -3,10 +3,17 @@ from __future__ import annotations
 from copy import deepcopy
 from dataclasses import dataclass
 from datetime import UTC, datetime
+import json
 import re
 import string
 from typing import Protocol
 
+from ai_layer.openai_provider import (
+    OpenAiPromptRequest,
+    OpenAiProviderConfig,
+    OpenAiResponseCreator,
+    request_openai_output,
+)
 from source_engine.cleaner import clean_text, word_count
 from source_engine.models import SourceItem
 
@@ -51,6 +58,10 @@ HEADLINE_REJECT_TERMS = frozenset(
         "best ever",
     }
 )
+OPENAI_RETRY_ATTEMPTS = 2
+OPENAI_MAX_HEADLINE_OUTPUT_TOKENS = 220
+OPENAI_MAX_INTRO_OUTPUT_TOKENS = 220
+OPENAI_MAX_EXCERPT_OUTPUT_TOKENS = 180
 HEADLINE_STOPWORDS = frozenset(
     {
         "a",
@@ -113,6 +124,13 @@ class MicroSkillProvider(Protocol):
 
 
 @dataclass(frozen=True)
+class ProviderCallMetadata:
+    ai_used: bool
+    model_label: str | None = None
+    fallback_reason: str | None = None
+
+
+@dataclass(frozen=True)
 class HeuristicMicroSkillProvider:
     provider_label: str = "heuristic-v1"
     records_ai_usage: bool = False
@@ -145,12 +163,149 @@ class HeuristicMicroSkillProvider:
         return _normalize_excerpt_value(base, min_words=min_words, max_words=max_words)
 
 
+class OpenAiMicroSkillProvider:
+    records_ai_usage = True
+
+    def __init__(
+        self,
+        config: OpenAiProviderConfig,
+        *,
+        response_creator: OpenAiResponseCreator | None = None,
+        heuristic_provider: HeuristicMicroSkillProvider | None = None,
+    ) -> None:
+        self.config = config
+        self.provider_label = config.model
+        self._response_creator = response_creator
+        self._heuristic_provider = heuristic_provider or HeuristicMicroSkillProvider()
+        self._last_call_metadata: ProviderCallMetadata | None = None
+
+    def consume_last_call_metadata(self) -> ProviderCallMetadata | None:
+        metadata = self._last_call_metadata
+        self._last_call_metadata = None
+        return metadata
+
+    def generate_headline_variants(
+        self,
+        draft: DraftRecord,
+        source_item: SourceItem,
+        desired_count: int,
+    ) -> list[str]:
+        request = _build_headline_prompt_request(draft, source_item, desired_count=desired_count)
+        last_error: str | None = None
+        for attempt in range(OPENAI_RETRY_ATTEMPTS):
+            active_request = request if attempt == 0 else _build_retry_prompt_request(request)
+            try:
+                payload = _request_openai_json_payload(
+                    active_request,
+                    self.config,
+                    response_creator=self._response_creator,
+                )
+                values = payload.get("headline_variants")
+                if not isinstance(values, list):
+                    raise ValueError("OpenAI headline response must contain a headline_variants list.")
+                variants = [clean_text(str(value)) for value in values if clean_text(str(value))]
+                normalized = _normalize_headline_variants(variants, draft, source_item)
+                if len(normalized) >= HEADLINE_MIN_VARIANTS:
+                    self._last_call_metadata = ProviderCallMetadata(
+                        ai_used=True,
+                        model_label=self.provider_label,
+                    )
+                    return variants
+                last_error = "OpenAI headline variants did not meet the current headline quality bounds."
+            except Exception as exc:
+                last_error = str(exc)
+        self._last_call_metadata = ProviderCallMetadata(
+            ai_used=False,
+            fallback_reason=f"generate_headline_variants fell back to heuristic provider: {last_error}",
+        )
+        return self._heuristic_provider.generate_headline_variants(draft, source_item, desired_count)
+
+    def generate_short_intro(
+        self,
+        draft: DraftRecord,
+        source_item: SourceItem,
+        min_words: int,
+        max_words: int,
+    ) -> str:
+        request = _build_intro_prompt_request(
+            draft,
+            source_item,
+            min_words=min_words,
+            max_words=max_words,
+        )
+        last_error: str | None = None
+        for attempt in range(OPENAI_RETRY_ATTEMPTS):
+            active_request = request if attempt == 0 else _build_retry_prompt_request(request)
+            try:
+                payload = _request_openai_json_payload(
+                    active_request,
+                    self.config,
+                    response_creator=self._response_creator,
+                )
+                intro_text = clean_text(str(payload.get("intro_text", "") or ""))
+                intro_word_count = word_count(intro_text)
+                if intro_text and min_words <= intro_word_count <= max_words:
+                    self._last_call_metadata = ProviderCallMetadata(
+                        ai_used=True,
+                        model_label=self.provider_label,
+                    )
+                    return intro_text
+                last_error = "OpenAI intro output did not stay within the required intro bounds."
+            except Exception as exc:
+                last_error = str(exc)
+        self._last_call_metadata = ProviderCallMetadata(
+            ai_used=False,
+            fallback_reason=f"generate_short_intro fell back to heuristic provider: {last_error}",
+        )
+        return self._heuristic_provider.generate_short_intro(draft, source_item, min_words, max_words)
+
+    def generate_excerpt(
+        self,
+        draft: DraftRecord,
+        source_item: SourceItem,
+        min_words: int,
+        max_words: int,
+    ) -> str:
+        request = _build_excerpt_prompt_request(
+            draft,
+            source_item,
+            min_words=min_words,
+            max_words=max_words,
+        )
+        last_error: str | None = None
+        for attempt in range(OPENAI_RETRY_ATTEMPTS):
+            active_request = request if attempt == 0 else _build_retry_prompt_request(request)
+            try:
+                payload = _request_openai_json_payload(
+                    active_request,
+                    self.config,
+                    response_creator=self._response_creator,
+                )
+                excerpt_text = clean_text(str(payload.get("excerpt_text", "") or ""))
+                excerpt_word_count = word_count(excerpt_text)
+                if excerpt_text and min_words <= excerpt_word_count <= max_words:
+                    self._last_call_metadata = ProviderCallMetadata(
+                        ai_used=True,
+                        model_label=self.provider_label,
+                    )
+                    return excerpt_text
+                last_error = "OpenAI excerpt output did not stay within the required excerpt bounds."
+            except Exception as exc:
+                last_error = str(exc)
+        self._last_call_metadata = ProviderCallMetadata(
+            ai_used=False,
+            fallback_reason=f"generate_excerpt fell back to heuristic provider: {last_error}",
+        )
+        return self._heuristic_provider.generate_excerpt(draft, source_item, min_words, max_words)
+
+
 def apply_micro_skills(
     draft: DraftRecord,
     source_item: SourceItem,
     requested_skills: list[str] | tuple[str, ...],
     provider: MicroSkillProvider | None = None,
     created_at: str | None = None,
+    fallback_events: list[str] | None = None,
 ) -> DraftRecord:
     active_provider = provider or HeuristicMicroSkillProvider()
     _validate_requested_skills(requested_skills)
@@ -167,11 +322,22 @@ def apply_micro_skills(
     for skill_name in requested_skills:
         if skill_name == "generate_headline_variants":
             generated = active_provider.generate_headline_variants(updated_draft, source_item, HEADLINE_VARIANT_COUNT)
+            call_metadata = _consume_provider_call_metadata(active_provider)
             variants = _normalize_headline_variants(generated, updated_draft, source_item)
+            model_label = _resolve_model_label(active_provider, call_metadata)
             if len(variants) < HEADLINE_MIN_VARIANTS:
                 variants = _fallback_headline_variants(updated_draft, source_item, HEADLINE_VARIANT_COUNT)
+                if call_metadata is not None:
+                    model_label = None
+                fallback_reason = _resolve_fallback_reason(
+                    call_metadata,
+                    default_reason="generate_headline_variants fell back to heuristic provider because provider output did not meet headline quality bounds.",
+                )
+                _record_fallback_event(fallback_events, fallback_reason)
+            else:
+                _record_fallback_event(fallback_events, _resolve_fallback_reason(call_metadata))
             updated_draft.headline_variants = variants[:HEADLINE_MAX_VARIANTS]
-            _append_ai_log(updated_draft, active_provider, skill_name, "headline_variants", timestamp)
+            _append_ai_log(updated_draft, skill_name, "headline_variants", timestamp, model_label=model_label)
         elif skill_name == "generate_short_intro":
             if "intro" not in contract.required_slot_order:
                 raise ValueError(
@@ -184,6 +350,8 @@ def apply_micro_skills(
                 intro_min_words,
                 intro_max_words,
             )
+            call_metadata = _consume_provider_call_metadata(active_provider)
+            model_label = _resolve_model_label(active_provider, call_metadata)
             updated_draft.intro_text = _normalize_intro_value(
                 generated or updated_draft.intro_text,
                 min_words=intro_min_words,
@@ -192,7 +360,15 @@ def apply_micro_skills(
             )
             if skill_name in CONTENT_AFFECTING_MICRO_SKILLS and updated_draft.intro_text != previous_intro:
                 content_affecting_change = True
-            _append_ai_log(updated_draft, active_provider, skill_name, "intro_text", timestamp)
+            if clean_text(generated) != clean_text(updated_draft.intro_text) and call_metadata and call_metadata.ai_used:
+                model_label = None
+                _record_fallback_event(
+                    fallback_events,
+                    "generate_short_intro fell back to bounded deterministic normalization after provider output missed the accepted intro contract.",
+                )
+            else:
+                _record_fallback_event(fallback_events, _resolve_fallback_reason(call_metadata))
+            _append_ai_log(updated_draft, skill_name, "intro_text", timestamp, model_label=model_label)
         elif skill_name == "generate_excerpt":
             generated = active_provider.generate_excerpt(
                 updated_draft,
@@ -200,13 +376,23 @@ def apply_micro_skills(
                 EXCERPT_MIN_WORDS,
                 EXCERPT_MAX_WORDS,
             )
+            call_metadata = _consume_provider_call_metadata(active_provider)
+            model_label = _resolve_model_label(active_provider, call_metadata)
             updated_draft.excerpt = _normalize_excerpt_value(
                 generated or updated_draft.excerpt,
                 min_words=EXCERPT_MIN_WORDS,
                 max_words=EXCERPT_MAX_WORDS,
                 fallback=updated_draft.excerpt or updated_draft.intro_text,
             )
-            _append_ai_log(updated_draft, active_provider, skill_name, "excerpt", timestamp)
+            if clean_text(generated) != clean_text(updated_draft.excerpt) and call_metadata and call_metadata.ai_used:
+                model_label = None
+                _record_fallback_event(
+                    fallback_events,
+                    "generate_excerpt fell back to bounded deterministic normalization after provider output missed the accepted excerpt contract.",
+                )
+            else:
+                _record_fallback_event(fallback_events, _resolve_fallback_reason(call_metadata))
+            _append_ai_log(updated_draft, skill_name, "excerpt", timestamp, model_label=model_label)
         else:
             raise ValueError(f"Unsupported micro-skill: {skill_name}")
 
@@ -499,20 +685,216 @@ def _normalize_line(value: str) -> str:
 
 def _append_ai_log(
     draft: DraftRecord,
-    provider: MicroSkillProvider,
     skill_name: str,
     target_field: str,
     created_at: str,
+    *,
+    model_label: str | None,
 ) -> None:
-    if not provider.records_ai_usage:
+    if not model_label:
         return
     draft.ai_assistance_log.append(
         AiAssistanceRecord(
             skill_name=skill_name,
             target_field=target_field,
-            model_label=provider.provider_label,
+            model_label=model_label,
             created_at=created_at,
         )
+    )
+
+
+def _consume_provider_call_metadata(provider: MicroSkillProvider) -> ProviderCallMetadata | None:
+    consume = getattr(provider, "consume_last_call_metadata", None)
+    if callable(consume):
+        return consume()
+    return None
+
+
+def _resolve_model_label(
+    provider: MicroSkillProvider,
+    call_metadata: ProviderCallMetadata | None,
+) -> str | None:
+    if call_metadata is not None:
+        return call_metadata.model_label if call_metadata.ai_used else None
+    if getattr(provider, "records_ai_usage", False):
+        return getattr(provider, "provider_label", None)
+    return None
+
+
+def _resolve_fallback_reason(
+    call_metadata: ProviderCallMetadata | None,
+    *,
+    default_reason: str | None = None,
+) -> str | None:
+    if call_metadata and call_metadata.fallback_reason:
+        return call_metadata.fallback_reason
+    return default_reason
+
+
+def _record_fallback_event(fallback_events: list[str] | None, fallback_reason: str | None) -> None:
+    if fallback_events is None or not fallback_reason:
+        return
+    if fallback_reason not in fallback_events:
+        fallback_events.append(fallback_reason)
+
+
+def _build_headline_prompt_request(
+    draft: DraftRecord,
+    source_item: SourceItem,
+    *,
+    desired_count: int,
+) -> OpenAiPromptRequest:
+    instructions = (
+        "You are refining bounded editorial headline variants for a food-content workflow. "
+        "Return only valid JSON with one key named headline_variants containing 2 to 5 standalone headline strings. "
+        "Keep subject-anchor relevance, avoid clicky or misleading language, avoid weak 'you won't believe' phrasing, "
+        "and do not include commentary or markdown."
+    )
+    input_text = json.dumps(
+        {
+            "target_field": "headline_variants",
+            "selected_headline": draft.headline_selected,
+            "source_title": source_item.raw_title,
+            "template_family": draft.template_family,
+            "desired_count": desired_count,
+            "prohibited_patterns": sorted(HEADLINE_REJECT_TERMS),
+        },
+        sort_keys=True,
+    )
+    return OpenAiPromptRequest(
+        task_name="generate_headline_variants",
+        instructions=instructions,
+        input_text=input_text,
+        max_output_tokens=OPENAI_MAX_HEADLINE_OUTPUT_TOKENS,
+    )
+
+
+def _build_intro_prompt_request(
+    draft: DraftRecord,
+    source_item: SourceItem,
+    *,
+    min_words: int,
+    max_words: int,
+) -> OpenAiPromptRequest:
+    instructions = (
+        "You are refining one answer-first blog intro for a bounded content workflow. "
+        "Return only valid JSON with one key named intro_text. "
+        "Stay within the requested word bounds, do not add unsupported facts, keep the framing answer-first, "
+        "and do not expand into a free-form article."
+    )
+    input_text = json.dumps(
+        {
+            "target_field": "intro_text",
+            "selected_headline": draft.headline_selected,
+            "template_id": draft.template_id,
+            "template_family": draft.template_family,
+            "tone_notes": ["answer_first", "clean", "mobile_friendly"],
+            "intro_bounds": {"min_words": min_words, "max_words": max_words},
+            "source_lineage": {
+                "source_title": source_item.raw_title,
+                "source_summary": source_item.raw_summary,
+                "source_url": source_item.source_url,
+            },
+            "draft_context": {
+                "intro_text": draft.intro_text,
+                "excerpt": draft.excerpt,
+                "section_context": _draft_section_context(draft),
+            },
+        },
+        sort_keys=True,
+    )
+    return OpenAiPromptRequest(
+        task_name="generate_short_intro",
+        instructions=instructions,
+        input_text=input_text,
+        max_output_tokens=OPENAI_MAX_INTRO_OUTPUT_TOKENS,
+    )
+
+
+def _build_excerpt_prompt_request(
+    draft: DraftRecord,
+    source_item: SourceItem,
+    *,
+    min_words: int,
+    max_words: int,
+) -> OpenAiPromptRequest:
+    instructions = (
+        "You are refining one bounded blog excerpt. "
+        "Return only valid JSON with one key named excerpt_text. "
+        "Stay summary-like instead of promotional, remain within the requested word bounds, and do not add unsupported claims."
+    )
+    input_text = json.dumps(
+        {
+            "target_field": "excerpt",
+            "selected_headline": draft.headline_selected,
+            "template_family": draft.template_family,
+            "excerpt_bounds": {"min_words": min_words, "max_words": max_words},
+            "tone_notes": ["summary_like", "non_promotional", "mobile_friendly"],
+            "source_lineage": {
+                "source_title": source_item.raw_title,
+                "source_summary": source_item.raw_summary,
+            },
+            "draft_context": {
+                "intro_text": draft.intro_text,
+                "excerpt": draft.excerpt,
+                "section_context": _draft_section_context(draft),
+            },
+        },
+        sort_keys=True,
+    )
+    return OpenAiPromptRequest(
+        task_name="generate_excerpt",
+        instructions=instructions,
+        input_text=input_text,
+        max_output_tokens=OPENAI_MAX_EXCERPT_OUTPUT_TOKENS,
+    )
+
+
+def _draft_section_context(draft: DraftRecord) -> list[dict[str, str]]:
+    context: list[dict[str, str]] = []
+    for section in draft.sections[:3]:
+        primary_text = ""
+        if section.body_blocks:
+            primary_text = clean_text(section.body_blocks[0])
+        elif section.bullet_points:
+            primary_text = clean_text(section.bullet_points[0])
+        context.append(
+            {
+                "section_key": section.section_key,
+                "section_label": section.section_label,
+                "primary_text": primary_text,
+            }
+        )
+    return context
+
+
+def _request_openai_json_payload(
+    request: OpenAiPromptRequest,
+    config: OpenAiProviderConfig,
+    *,
+    response_creator: OpenAiResponseCreator | None = None,
+) -> dict[str, object]:
+    output_text = request_openai_output(
+        request,
+        config,
+        response_creator=response_creator,
+    )
+    try:
+        payload = json.loads(output_text)
+    except json.JSONDecodeError as exc:
+        raise ValueError(f"OpenAI returned invalid JSON for task {request.task_name}.") from exc
+    if not isinstance(payload, dict):
+        raise ValueError(f"OpenAI returned an invalid JSON root for task {request.task_name}.")
+    return payload
+
+
+def _build_retry_prompt_request(request: OpenAiPromptRequest) -> OpenAiPromptRequest:
+    return OpenAiPromptRequest(
+        task_name=request.task_name,
+        instructions=request.instructions
+        + " Retry once and return only valid JSON that exactly matches the requested key and bounds.",
+        input_text=request.input_text,
+        max_output_tokens=request.max_output_tokens,
     )
 
 

@@ -1,0 +1,10 @@
+[Unit]
+Description=Run Content Ops daily runtime reports
+
+[Timer]
+OnCalendar=03:00
+Persistent=true
+Unit=content-ops-daily-reports.service
+
+[Install]
+WantedBy=timers.target

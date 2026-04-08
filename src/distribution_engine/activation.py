@@ -5,6 +5,7 @@ import json
 from pathlib import Path
 
 from content_engine.storage import DRAFT_RECORDS_PATH, read_draft_records
+from media_engine.storage import ASSET_RECORDS_PATH
 from distribution_engine.health import (
     BLOG_FACEBOOK_MAPPING_RECORDS_PATH,
     BLOG_PUBLISH_RECORDS_PATH,
@@ -121,6 +122,7 @@ def build_system_activation_readiness_report(
     blog_publish_records_path: Path | None = None,
     social_package_records_path: Path | None = None,
     social_package_reviews_path: Path | None = None,
+    asset_records_path: Path | None = None,
     facebook_publish_records_path: Path | None = None,
     queue_item_records_path: Path | None = None,
     mapping_records_path: Path | None = None,
@@ -135,6 +137,7 @@ def build_system_activation_readiness_report(
         blog_publish_records_path=blog_publish_records_path or BLOG_PUBLISH_RECORDS_PATH,
         social_package_records_path=social_package_records_path or SOCIAL_PACKAGE_RECORDS_PATH,
         social_package_reviews_path=social_package_reviews_path or SOCIAL_PACKAGE_REVIEWS_PATH,
+        asset_records_path=asset_records_path or ASSET_RECORDS_PATH,
         facebook_publish_records_path=facebook_publish_records_path or FACEBOOK_PUBLISH_RECORDS_PATH,
         queue_item_records_path=queue_item_records_path or QUEUE_ITEM_RECORDS_PATH,
         mapping_records_path=mapping_records_path or BLOG_FACEBOOK_MAPPING_RECORDS_PATH,

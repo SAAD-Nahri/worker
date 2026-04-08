@@ -49,8 +49,20 @@ This directory now contains both committed configuration and generated runtime a
 15. `tracking_audit_records.jsonl`
    Append-only Phase 4 audit records for deliberate normalization runs and execute-mode transport validation.
 
-16. `archive/<timestamp>/...`
+16. `media_brief_records.jsonl`
+   Append-only Phase 4.7 media brief records derived from approved draft context.
+
+17. `asset_records.jsonl`
+   Append-only Phase 4.7 asset records preserving provenance, review state, and publish-chain linkage.
+
+18. `asset_review_records.jsonl`
+   Append-only Phase 4.7 asset review records for explicit operator media approval decisions.
+
+19. `archive/<timestamp>/...`
    Archived runtime snapshots created by the explicit reset workflow.
+
+20. `reports/<timestamp>/...`
+   Optional scheduled JSON health and history snapshots created by the runtime reporting service examples.
 
 ## Operational Rules
 
@@ -75,6 +87,8 @@ This directory now contains both committed configuration and generated runtime a
 19. Distribution health summaries are derived from the Phase 3 publish, review, queue, and mapping records; they are not stored as their own runtime artifact in v1.
 20. Phase 4 publish-chain history, exception, activity, and variant summaries are also derived on demand from the append-only runtime records; they are not stored as their own runtime artifact in v1.
 21. Phase 4 tracking audit records are runtime state and should remain opt-in and low-volume; they are not a general event stream.
+22. Optional `data/reports/` snapshots are derived operational outputs, not the source of truth for workflow state.
+23. Media brief, asset, and asset-review records are runtime state too, and should preserve rights-safe provenance plus explicit visual approval for blog and Facebook outputs.
 
 ## Clean Local Re-run Guidance
 
@@ -94,5 +108,8 @@ If a clean local run is needed for development, keep `source_registry.json` and 
 12. `queue_review_records.jsonl`
 13. `blog_facebook_mapping_records.jsonl`
 14. `tracking_audit_records.jsonl`
+15. `media_brief_records.jsonl`
+16. `asset_records.jsonl`
+17. `asset_review_records.jsonl`
 
 That choice should be explicit, because deleting the dedupe index changes run behavior.

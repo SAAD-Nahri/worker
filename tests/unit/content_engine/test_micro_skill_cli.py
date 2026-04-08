@@ -2,11 +2,13 @@ from __future__ import annotations
 
 import io
 import json
+import os
 import sys
 from contextlib import redirect_stdout
 from pathlib import Path
 import tempfile
 import unittest
+from unittest.mock import patch
 
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -122,6 +124,46 @@ class MicroSkillCliTests(unittest.TestCase):
                         str(source_path),
                     ]
                 )
+
+    def test_micro_skill_cli_openai_provider_falls_back_to_heuristic_when_config_is_missing(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            draft_path = root / "draft_records.jsonl"
+            source_path = root / "source_items.jsonl"
+            missing_config_path = root / "openai_provider_config.local.json"
+            item = _build_source_item()
+            source_path.write_text(json.dumps(item.to_dict()) + "\n", encoding="utf-8")
+            draft = format_source_item_to_draft(item, created_at="2026-04-03T12:00:00+00:00")
+            append_draft_records([draft], path=draft_path)
+
+            buffer = io.StringIO()
+            with patch.dict(os.environ, {"OPENAI_API_KEY": ""}, clear=False):
+                with redirect_stdout(buffer):
+                    exit_code = main(
+                        [
+                            "--draft-id",
+                            draft.draft_id,
+                            "--skill",
+                            "generate_headline_variants",
+                            "--provider",
+                            "openai",
+                            "--openai-config-path",
+                            str(missing_config_path),
+                            "--draft-records-path",
+                            str(draft_path),
+                            "--source-items-path",
+                            str(source_path),
+                        ]
+                    )
+
+            self.assertEqual(exit_code, 0)
+            payload = json.loads(buffer.getvalue().strip())
+            self.assertEqual(payload["provider_requested"], "openai")
+            self.assertEqual(payload["provider"], "heuristic-v1")
+            self.assertIn("OPENAI_API_KEY", payload["fallback_reason"])
+            latest = load_latest_draft_record(draft.draft_id, path=draft_path)
+            self.assertGreaterEqual(len(latest.headline_variants), 2)
+            self.assertEqual(len(latest.ai_assistance_log), 0)
 
 
 if __name__ == "__main__":

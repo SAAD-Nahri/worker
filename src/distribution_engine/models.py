@@ -3,6 +3,8 @@ from __future__ import annotations
 from dataclasses import asdict, dataclass, field
 from typing import Any
 
+from content_engine.models import AiAssistanceRecord
+
 
 ALLOWED_SOCIAL_PACKAGE_TEMPLATE_IDS = frozenset(
     {
@@ -100,6 +102,8 @@ class SocialPackageRecord:
     approval_state: str = "pending_review"
     blog_url: str | None = None
     selected_variant_label: str | None = None
+    variant_options: list[dict[str, str]] = field(default_factory=list)
+    ai_assistance_log: list[AiAssistanceRecord] = field(default_factory=list)
     packaging_notes: str | None = None
     created_at: str = ""
     updated_at: str = ""
@@ -119,6 +123,34 @@ class SocialPackageRecord:
             raise ValueError("Social package record requires caption_text.")
         if not self.comment_cta_text.strip():
             raise ValueError("Social package record requires comment_cta_text.")
+        labels: set[str] = set()
+        for option in self.variant_options:
+            label = str(option.get("label", "")).strip()
+            hook_text = str(option.get("hook_text", "")).strip()
+            caption_text = str(option.get("caption_text", "")).strip()
+            comment_cta_text = str(option.get("comment_cta_text", "")).strip()
+            if not label:
+                raise ValueError("Social package variant options require label.")
+            if label in labels:
+                raise ValueError(f"Duplicate social package variant label: {label}")
+            if not hook_text or not caption_text or not comment_cta_text:
+                raise ValueError(
+                    f"Social package variant option '{label}' requires hook_text, caption_text, and comment_cta_text."
+                )
+            labels.add(label)
+        if self.selected_variant_label and self.variant_options and self.selected_variant_label not in labels:
+            raise ValueError(
+                f"selected_variant_label '{self.selected_variant_label}' is not present in variant_options."
+            )
+        for entry in self.ai_assistance_log:
+            if not getattr(entry, "skill_name", "").strip():
+                raise ValueError("Social package AI assistance entries require skill_name.")
+            if not getattr(entry, "target_field", "").strip():
+                raise ValueError("Social package AI assistance entries require target_field.")
+            if not getattr(entry, "model_label", "").strip():
+                raise ValueError("Social package AI assistance entries require model_label.")
+            if not getattr(entry, "created_at", "").strip():
+                raise ValueError("Social package AI assistance entries require created_at.")
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)

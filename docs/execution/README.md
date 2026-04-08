@@ -58,10 +58,16 @@ These documents convert the planning stack into a real operating starting point.
 18. [COOLIFY_OPERATOR_API_DEPLOYMENT_RUNBOOK.md](C:/Users/Administrator/OneDrive/Documents/co_ma/docs/execution/COOLIFY_OPERATOR_API_DEPLOYMENT_RUNBOOK.md)
    The hosted deployment runbook for running the Operator API on Coolify with a real HTTPS domain and Git-based autodeploy.
 
-18. [PHASE_4_5_ACCEPTANCE_BATCH_1.md](C:/Users/Administrator/OneDrive/Documents/co_ma/docs/execution/PHASE_4_5_ACCEPTANCE_BATCH_1.md)
+19. [PHASE_4_7_ACCEPTANCE_BATCH_1.md](C:/Users/Administrator/OneDrive/Documents/co_ma/docs/execution/PHASE_4_7_ACCEPTANCE_BATCH_1.md)
+   The first media-layer batch covering approved-draft media briefs, provenance-tagged asset records, operator review, and asset readiness visibility through the publish chain.
+
+20. [PHASE_4_8_ACCEPTANCE_BATCH_1.md](C:/Users/Administrator/OneDrive/Documents/co_ma/docs/execution/PHASE_4_8_ACCEPTANCE_BATCH_1.md)
+   The first runtime-operations batch covering backup/restore tooling plus scheduled deployment examples for production rehearsal.
+
+21. [PHASE_4_5_ACCEPTANCE_BATCH_1.md](C:/Users/Administrator/OneDrive/Documents/co_ma/docs/execution/PHASE_4_5_ACCEPTANCE_BATCH_1.md)
    The first honest Phase 4.5 activation batch covering local config scaffolding, dry-run transport validation, and one technical pre-live canary chain.
 
-19. [PHASE_4_5_ACCEPTANCE_BATCH_2.md](C:/Users/Administrator/OneDrive/Documents/co_ma/docs/execution/PHASE_4_5_ACCEPTANCE_BATCH_2.md)
+21. [PHASE_4_5_ACCEPTANCE_BATCH_2.md](C:/Users/Administrator/OneDrive/Documents/co_ma/docs/execution/PHASE_4_5_ACCEPTANCE_BATCH_2.md)
    The second Phase 4.5 activation checkpoint covering the live readiness report, the updated green test baseline, and the exact remaining execute-mode blockers.
 
 20. [PHASE_4_5_ACCEPTANCE_BATCH_3.md](C:/Users/Administrator/OneDrive/Documents/co_ma/docs/execution/PHASE_4_5_ACCEPTANCE_BATCH_3.md)
@@ -102,6 +108,9 @@ These documents convert the planning stack into a real operating starting point.
 
 32. [PHASE_4_9_ACCEPTANCE_BATCH_9.md](C:/Users/Administrator/OneDrive/Documents/co_ma/docs/execution/PHASE_4_9_ACCEPTANCE_BATCH_9.md)
    The Coolify deployment batch covering the container baseline, health endpoint, Git autodeploy shape, and hosted Operator API runbook.
+
+33. [PHASE_4_9_ACCEPTANCE_BATCH_10.md](C:/Users/Administrator/OneDrive/Documents/co_ma/docs/execution/PHASE_4_9_ACCEPTANCE_BATCH_10.md)
+   The media-review shell batch covering the dedicated WordPress admin media inbox/detail flow, dashboard visibility, and validation updates.
 
 26. [PHASE_2_ACCEPTANCE_BATCH_1.md](C:/Users/Administrator/OneDrive/Documents/co_ma/docs/execution/PHASE_2_ACCEPTANCE_BATCH_1.md)
    The first live Phase 2 acceptance batch and the quality findings it surfaced.

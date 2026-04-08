@@ -28,7 +28,7 @@ Out of scope:
 
 1. public-facing API,
 2. analytics API,
-3. media management API.
+3. media upload or generation API.
 
 ### Slice 2: Queue review and scheduling gate
 
@@ -67,16 +67,17 @@ Deliverables:
 2. dashboard page,
 3. draft review inbox/detail,
 4. social review inbox/detail,
-5. queue review inbox/detail,
-6. validation page,
-7. settings and shared-secret config.
+5. media review inbox/detail,
+6. queue review inbox/detail,
+7. validation page,
+8. settings and shared-secret config.
 
 Out of scope:
 
 1. full post editing,
 2. custom workflow tables,
 3. analytics dashboards,
-4. media manager.
+4. media upload or authoring manager.
 
 ### Slice 4: Validation and hardening
 
@@ -100,6 +101,31 @@ Out of scope:
 1. autoapproval,
 2. score-assisted fast lane,
 3. deep UI redesign.
+
+### Slice 5: Review-speed upgrade
+
+Objective:
+
+1. make the inboxes fast enough for daily use,
+2. keep the UI strongly WordPress-native while reducing unnecessary detail-page hops,
+3. allow bounded operator-safe output selection without creating full editing.
+
+Deliverables:
+
+1. inbox filtering and search,
+2. dashboard priority review-now sections,
+3. inline quick approve and quick needs-edits actions,
+4. prepared headline-variant selection on draft detail,
+5. prepared social-variant selection on social detail,
+6. preserved filter state across inbox and detail navigation,
+7. focused backend tests for filters and variant selection.
+
+Out of scope:
+
+1. free-form article editing,
+2. transport execution inside the plugin,
+3. media upload or generation,
+4. score-assisted autoapproval.
 
 ## Default Rule
 

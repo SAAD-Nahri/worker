@@ -15,6 +15,8 @@ data/queue_item_records.jsonl
 data/blog_facebook_mapping_records.jsonl
 data/tracking_audit_records.jsonl
 data/archive/
+data/reports/
+backups/
 wordpress_rest_config.local.json
 config/wordpress_rest_config.local.json
 facebook_graph_config.local.json

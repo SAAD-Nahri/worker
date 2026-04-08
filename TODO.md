@@ -201,10 +201,10 @@ This is the master execution checklist for the project. It should be updated as 
 - [x] Define the provider-backed micro-skill architecture.
 - [x] Define the first provider credential policy for optional local AI usage.
 - [x] Define the prompt and output contracts for provider-backed headline, intro, and excerpt skills.
-- [ ] Preserve deterministic and heuristic fallback behavior as a hard rule.
-- [ ] Implement the first optional provider-backed quality skills.
-- [ ] Validate quality gains without allowing full-article generation.
-- [ ] Record the first acceptance batch for AI-assisted content quality.
+- [x] Preserve deterministic and heuristic fallback behavior as a hard rule.
+- [x] Implement the first optional provider-backed quality skills.
+- [x] Validate quality gains without allowing full-article generation.
+- [x] Record the first acceptance batch for AI-assisted content quality.
 
 ## Phase 4.7: Media And Asset Layer
 
@@ -212,9 +212,9 @@ This is the master execution checklist for the project. It should be updated as 
 - [x] Define the first media record and linkage model.
 - [x] Define the first media brief contract from approved draft context.
 - [x] Decide the first allowed media source type for the baseline.
-- [ ] Implement the first operator-reviewed media flow for blog and Facebook outputs.
-- [ ] Preserve asset provenance, review state, and linkage in the publish chain.
-- [ ] Record the first acceptance batch for media and asset handling.
+- [x] Implement the first operator-reviewed media flow for blog and Facebook outputs.
+- [x] Preserve asset provenance, review state, and linkage in the publish chain.
+- [x] Record the first acceptance batch for media and asset handling.
 
 ## Phase 4.8: Runtime Operations And Deployment
 
@@ -224,7 +224,7 @@ This is the master execution checklist for the project. It should be updated as 
 - [x] Define the Phase 4.8 execution plan and validation plan.
 - [x] Create the operations and deployment runbook.
 - [x] Define the operator API runtime policy for local development and future production hosting.
-- [ ] Implement the first production-host deployment baseline for the chosen runtime target.
+- [x] Implement the first production-host deployment baseline for the chosen runtime target.
 - [ ] Rehearse a cold-start deployment on the chosen host.
 - [ ] Rehearse a backup and recovery drill against real runtime data.
 - [ ] Write the formal Phase 4.8 closeout review.
@@ -257,6 +257,12 @@ This is the master execution checklist for the project. It should be updated as 
 - [x] Add reverse-proxy deployment examples for the operator API.
 - [x] Add a Coolify-ready Operator API container baseline.
 - [x] Add a hosted Coolify deployment runbook with Git autodeploy guidance.
+- [x] Add dashboard priority review-now sections for drafts, social packages, and queue items.
+- [x] Add inbox filtering and search across draft, social, and queue review surfaces.
+- [x] Add inline quick approve and quick needs-edits review actions for daily triage.
+- [x] Add bounded headline-variant and social-variant selection on detail screens.
+- [x] Add a dedicated media-review surface to the WordPress approval shell with linked asset context.
+- [x] Add focused backend regression coverage for filtering, priority queues, and variant selection.
 - [ ] Validate the plugin in a real WordPress admin environment.
 - [ ] Record the first live plugin validation batch.
 - [ ] Write the formal Phase 4.9 closeout review.

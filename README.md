@@ -158,12 +158,12 @@ The current recommended path is:
 4. treat Phase 3 as formally closed with explicit residual items recorded,
 5. treat Phase 4 as formally closed with explicit residual items recorded,
 6. treat Phase 4.5 as the current activation gate before more complexity is added,
-7. treat Phase 4.6 AI-assisted content quality as a required future phase after activation,
-8. treat Phase 4.7 media and asset handling as a required future phase before the Decision Layer,
+7. treat Phase 4.6 AI-assisted content quality as an implemented manual opt-in quality layer that still awaits formal phase closeout,
+8. treat Phase 4.7 media and asset handling as an implemented operator-reviewed baseline that still awaits formal phase closeout,
 9. treat Phase 4.8 runtime operations and deployment as a required future phase before the Decision Layer,
 10. treat Phase 4.9 approval UI and operator console as a required future phase before the Decision Layer,
 11. treat Phase 5.5 approval automation and autopilot as a required future phase after Decision Layer work proves strong scoring is trustworthy,
-12. use [PHASE_4_CLOSEOUT.md](C:/Users/Administrator/OneDrive/Documents/co_ma/docs/phases/PHASE_4_CLOSEOUT.md), [PHASE_4_5_SYSTEM_ACTIVATION.md](C:/Users/Administrator/OneDrive/Documents/co_ma/docs/phases/PHASE_4_5_SYSTEM_ACTIVATION.md), [PHASE_4_5_ACCEPTANCE_BATCH_1.md](C:/Users/Administrator/OneDrive/Documents/co_ma/docs/execution/PHASE_4_5_ACCEPTANCE_BATCH_1.md), [PHASE_4_5_ACCEPTANCE_BATCH_2.md](C:/Users/Administrator/OneDrive/Documents/co_ma/docs/execution/PHASE_4_5_ACCEPTANCE_BATCH_2.md), [PHASE_4_5_ACCEPTANCE_BATCH_3.md](C:/Users/Administrator/OneDrive/Documents/co_ma/docs/execution/PHASE_4_5_ACCEPTANCE_BATCH_3.md), [PHASE_4_5_ACCEPTANCE_BATCH_4.md](C:/Users/Administrator/OneDrive/Documents/co_ma/docs/execution/PHASE_4_5_ACCEPTANCE_BATCH_4.md), [PHASE_4_5_ACCEPTANCE_BATCH_5.md](C:/Users/Administrator/OneDrive/Documents/co_ma/docs/execution/PHASE_4_5_ACCEPTANCE_BATCH_5.md), [PHASE_4_5_ACCEPTANCE_BATCH_6.md](C:/Users/Administrator/OneDrive/Documents/co_ma/docs/execution/PHASE_4_5_ACCEPTANCE_BATCH_6.md), [WORDPRESS_REMOTE_STATE_RECONCILIATION_V1.md](C:/Users/Administrator/OneDrive/Documents/co_ma/docs/specs/WORDPRESS_REMOTE_STATE_RECONCILIATION_V1.md), [PHASE_4_6_AI_ASSISTED_CONTENT_QUALITY.md](C:/Users/Administrator/OneDrive/Documents/co_ma/docs/phases/PHASE_4_6_AI_ASSISTED_CONTENT_QUALITY.md), [PHASE_4_7_MEDIA_AND_ASSET_LAYER.md](C:/Users/Administrator/OneDrive/Documents/co_ma/docs/phases/PHASE_4_7_MEDIA_AND_ASSET_LAYER.md), [PHASE_4_8_RUNTIME_OPERATIONS_AND_DEPLOYMENT.md](C:/Users/Administrator/OneDrive/Documents/co_ma/docs/phases/PHASE_4_8_RUNTIME_OPERATIONS_AND_DEPLOYMENT.md), [PHASE_4_9_APPROVAL_UI_AND_OPERATOR_CONSOLE.md](C:/Users/Administrator/OneDrive/Documents/co_ma/docs/phases/PHASE_4_9_APPROVAL_UI_AND_OPERATOR_CONSOLE.md), [OPERATOR_API_CONTRACT_V1.md](C:/Users/Administrator/OneDrive/Documents/co_ma/docs/specs/OPERATOR_API_CONTRACT_V1.md), [WORDPRESS_ADMIN_APPROVAL_PLUGIN_V1.md](C:/Users/Administrator/OneDrive/Documents/co_ma/docs/specs/WORDPRESS_ADMIN_APPROVAL_PLUGIN_V1.md), [APPROVAL_UI_RUNBOOK.md](C:/Users/Administrator/OneDrive/Documents/co_ma/docs/execution/APPROVAL_UI_RUNBOOK.md), [PHASE_5_5_APPROVAL_AUTOMATION_AND_AUTOPILOT.md](C:/Users/Administrator/OneDrive/Documents/co_ma/docs/phases/PHASE_5_5_APPROVAL_AUTOMATION_AND_AUTOPILOT.md), [AUTOAPPROVAL_AND_AUTOPILOT_POLICY_V1.md](C:/Users/Administrator/OneDrive/Documents/co_ma/docs/specs/AUTOAPPROVAL_AND_AUTOPILOT_POLICY_V1.md), [RUNTIME_OPERATING_MODEL_V1.md](C:/Users/Administrator/OneDrive/Documents/co_ma/docs/specs/RUNTIME_OPERATING_MODEL_V1.md), [OPERATIONS_AND_DEPLOYMENT_RUNBOOK.md](C:/Users/Administrator/OneDrive/Documents/co_ma/docs/execution/OPERATIONS_AND_DEPLOYMENT_RUNBOOK.md), [LOCAL_SECRETS_AND_TRANSPORT_CONFIG_POLICY_V1.md](C:/Users/Administrator/OneDrive/Documents/co_ma/docs/specs/LOCAL_SECRETS_AND_TRANSPORT_CONFIG_POLICY_V1.md), [SYSTEM_ACTIVATION_RUNBOOK.md](C:/Users/Administrator/OneDrive/Documents/co_ma/docs/execution/SYSTEM_ACTIVATION_RUNBOOK.md), [PHASE_5_ENTRY_CHECKLIST.md](C:/Users/Administrator/OneDrive/Documents/co_ma/docs/phases/PHASE_5_ENTRY_CHECKLIST.md), and [PHASE_6_SCALING_LAYER.md](C:/Users/Administrator/OneDrive/Documents/co_ma/docs/phases/PHASE_6_SCALING_LAYER.md) as the current handoff baseline.
+12. use [PHASE_4_CLOSEOUT.md](C:/Users/Administrator/OneDrive/Documents/co_ma/docs/phases/PHASE_4_CLOSEOUT.md), [PHASE_4_5_SYSTEM_ACTIVATION.md](C:/Users/Administrator/OneDrive/Documents/co_ma/docs/phases/PHASE_4_5_SYSTEM_ACTIVATION.md), [PHASE_4_5_ACCEPTANCE_BATCH_1.md](C:/Users/Administrator/OneDrive/Documents/co_ma/docs/execution/PHASE_4_5_ACCEPTANCE_BATCH_1.md), [PHASE_4_5_ACCEPTANCE_BATCH_2.md](C:/Users/Administrator/OneDrive/Documents/co_ma/docs/execution/PHASE_4_5_ACCEPTANCE_BATCH_2.md), [PHASE_4_5_ACCEPTANCE_BATCH_3.md](C:/Users/Administrator/OneDrive/Documents/co_ma/docs/execution/PHASE_4_5_ACCEPTANCE_BATCH_3.md), [PHASE_4_5_ACCEPTANCE_BATCH_4.md](C:/Users/Administrator/OneDrive/Documents/co_ma/docs/execution/PHASE_4_5_ACCEPTANCE_BATCH_4.md), [PHASE_4_5_ACCEPTANCE_BATCH_5.md](C:/Users/Administrator/OneDrive/Documents/co_ma/docs/execution/PHASE_4_5_ACCEPTANCE_BATCH_5.md), [PHASE_4_5_ACCEPTANCE_BATCH_6.md](C:/Users/Administrator/OneDrive/Documents/co_ma/docs/execution/PHASE_4_5_ACCEPTANCE_BATCH_6.md), [WORDPRESS_REMOTE_STATE_RECONCILIATION_V1.md](C:/Users/Administrator/OneDrive/Documents/co_ma/docs/specs/WORDPRESS_REMOTE_STATE_RECONCILIATION_V1.md), [PHASE_4_6_AI_ASSISTED_CONTENT_QUALITY.md](C:/Users/Administrator/OneDrive/Documents/co_ma/docs/phases/PHASE_4_6_AI_ASSISTED_CONTENT_QUALITY.md), [PHASE_4_6_ACCEPTANCE_BATCH_1.md](C:/Users/Administrator/OneDrive/Documents/co_ma/docs/execution/PHASE_4_6_ACCEPTANCE_BATCH_1.md), [PHASE_4_7_MEDIA_AND_ASSET_LAYER.md](C:/Users/Administrator/OneDrive/Documents/co_ma/docs/phases/PHASE_4_7_MEDIA_AND_ASSET_LAYER.md), [PHASE_4_8_RUNTIME_OPERATIONS_AND_DEPLOYMENT.md](C:/Users/Administrator/OneDrive/Documents/co_ma/docs/phases/PHASE_4_8_RUNTIME_OPERATIONS_AND_DEPLOYMENT.md), [PHASE_4_9_APPROVAL_UI_AND_OPERATOR_CONSOLE.md](C:/Users/Administrator/OneDrive/Documents/co_ma/docs/phases/PHASE_4_9_APPROVAL_UI_AND_OPERATOR_CONSOLE.md), [OPERATOR_API_CONTRACT_V1.md](C:/Users/Administrator/OneDrive/Documents/co_ma/docs/specs/OPERATOR_API_CONTRACT_V1.md), [WORDPRESS_ADMIN_APPROVAL_PLUGIN_V1.md](C:/Users/Administrator/OneDrive/Documents/co_ma/docs/specs/WORDPRESS_ADMIN_APPROVAL_PLUGIN_V1.md), [APPROVAL_UI_RUNBOOK.md](C:/Users/Administrator/OneDrive/Documents/co_ma/docs/execution/APPROVAL_UI_RUNBOOK.md), [PHASE_5_5_APPROVAL_AUTOMATION_AND_AUTOPILOT.md](C:/Users/Administrator/OneDrive/Documents/co_ma/docs/phases/PHASE_5_5_APPROVAL_AUTOMATION_AND_AUTOPILOT.md), [AUTOAPPROVAL_AND_AUTOPILOT_POLICY_V1.md](C:/Users/Administrator/OneDrive/Documents/co_ma/docs/specs/AUTOAPPROVAL_AND_AUTOPILOT_POLICY_V1.md), [RUNTIME_OPERATING_MODEL_V1.md](C:/Users/Administrator/OneDrive/Documents/co_ma/docs/specs/RUNTIME_OPERATING_MODEL_V1.md), [OPERATIONS_AND_DEPLOYMENT_RUNBOOK.md](C:/Users/Administrator/OneDrive/Documents/co_ma/docs/execution/OPERATIONS_AND_DEPLOYMENT_RUNBOOK.md), [LOCAL_SECRETS_AND_TRANSPORT_CONFIG_POLICY_V1.md](C:/Users/Administrator/OneDrive/Documents/co_ma/docs/specs/LOCAL_SECRETS_AND_TRANSPORT_CONFIG_POLICY_V1.md), [SYSTEM_ACTIVATION_RUNBOOK.md](C:/Users/Administrator/OneDrive/Documents/co_ma/docs/execution/SYSTEM_ACTIVATION_RUNBOOK.md), [PHASE_5_ENTRY_CHECKLIST.md](C:/Users/Administrator/OneDrive/Documents/co_ma/docs/phases/PHASE_5_ENTRY_CHECKLIST.md), and [PHASE_6_SCALING_LAYER.md](C:/Users/Administrator/OneDrive/Documents/co_ma/docs/phases/PHASE_6_SCALING_LAYER.md) as the current handoff baseline.
 
 ## Current Working Baseline
 
@@ -219,8 +219,8 @@ The current implemented slice covers:
 48. a safe WordPress remote-state inspection and append-only local reconciliation path for live canaries after manual WordPress admin actions,
 49. a real replacement canary chain with a published WordPress post, an append-only local reconciliation snapshot, and a recorded Facebook publish failure caused by an expired Page token rather than missing system behavior,
 50. append-only queue review records for operator queue approval and schedule gating,
-51. an internal operator API for dashboard, draft review, social review, queue review, queue scheduling, and combined health,
-52. a thin WordPress admin plugin shell for dashboard, draft review, social review, queue review, and settings,
+51. an internal operator API for dashboard, draft review, social review, media review, queue review, queue scheduling, and combined health,
+52. a thin WordPress admin plugin shell for dashboard, draft review, social review, media review, queue review, and settings,
 53. an approval UI runbook and acceptance evidence for the first operator-console baseline,
 54. operator-facing dashboard activity and alert visibility so the approval console shows what changed and what is currently blocked,
 55. an explicit queue-removal path so the operator can pull an item out of the current batch without faking another review outcome,
@@ -230,7 +230,17 @@ The current implemented slice covers:
 59. a dedicated approval-UI Validation page backed by one operator-readiness endpoint so live WordPress-admin verification can start from a clear baseline instead of ad hoc checks,
 60. a defined runtime policy for the operator API so future WordPress-admin use does not depend on ad hoc terminal commands or impossible localhost assumptions across separate hosts,
 61. plugin-side Operator API reachability guidance plus reverse-proxy deployment examples so hosted WordPress validation has a concrete path instead of a vague warning,
-62. a Coolify-ready Operator API container baseline with health endpoint, env-driven runtime config, and Git-autodeploy runbook.
+62. a Coolify-ready Operator API container baseline with health endpoint, env-driven runtime config, and Git-autodeploy runbook,
+63. an optional OpenAI provider layer using the official SDK and Responses API behind the existing draft micro-skill seam,
+64. explicit `--provider openai` support for draft micro-skills with bounded retry, heuristic fallback, and non-secret fallback reporting,
+65. a manual `refine_social_package.py` flow that appends review-safe OpenAI Facebook package variants without changing the selected package or approval state,
+66. review-visible AI provenance on draft and social package records surfaced through the operator API and approval UI detail screens,
+67. runtime backup and restore CLIs for `data/` and optional `config/*.local.json`,
+68. example `systemd` services and timers for intake, daily reports, and runtime backups on the production worker host,
+69. a Phase 4.7 media engine with append-only media brief, asset, and asset-review records,
+70. manual media CLIs for creating media briefs, registering provenance-tagged assets, and recording operator asset reviews,
+71. asset-readiness visibility in distribution health, operator API detail payloads, the WordPress approval shell, queue context, and validation reporting,
+72. publish-chain-safe asset completeness metadata so blog and Facebook outputs can see whether a reviewed asset is actually attached.
 
 The main code currently lives in:
 
@@ -266,9 +276,10 @@ The main code currently lives in:
 30. [src/cli/reset_runtime_state.py](C:/Users/Administrator/OneDrive/Documents/co_ma/src/cli/reset_runtime_state.py)
 31. [src/operator_api](C:/Users/Administrator/OneDrive/Documents/co_ma/src/operator_api)
 32. [src/cli/run_operator_api.py](C:/Users/Administrator/OneDrive/Documents/co_ma/src/cli/run_operator_api.py)
-33. [src/tracking_engine](C:/Users/Administrator/OneDrive/Documents/co_ma/src/tracking_engine)
-34. [wordpress-plugin/content-ops-approval-ui](C:/Users/Administrator/OneDrive/Documents/co_ma/wordpress-plugin/content-ops-approval-ui)
-35. [data/source_registry.json](C:/Users/Administrator/OneDrive/Documents/co_ma/data/source_registry.json)
+33. [src/ai_layer](C:/Users/Administrator/OneDrive/Documents/co_ma/src/ai_layer)
+34. [src/tracking_engine](C:/Users/Administrator/OneDrive/Documents/co_ma/src/tracking_engine)
+35. [wordpress-plugin/content-ops-approval-ui](C:/Users/Administrator/OneDrive/Documents/co_ma/wordpress-plugin/content-ops-approval-ui)
+36. [data/source_registry.json](C:/Users/Administrator/OneDrive/Documents/co_ma/data/source_registry.json)
 
 The current validation commands are:
 
@@ -281,6 +292,8 @@ python src\cli\review_source_status.py --source-id src_food_republic --reviewed-
 python src\cli\create_draft_from_source_item.py --source-item-id <source_item_id>
 python src\cli\review_draft.py --draft-id <draft_id> --outcome needs_edits --note "derivative_risk_fix: tighten wording"
 python src\cli\apply_draft_micro_skills.py --draft-id <draft_id> --skill generate_headline_variants --skill generate_excerpt
+python src\cli\apply_draft_micro_skills.py --draft-id <draft_id> --skill generate_headline_variants --skill generate_short_intro --skill generate_excerpt --provider openai --openai-config-path <openai_provider_config.local.json>
+python src\cli\create_runtime_backup.py --backup-root <backup_dir>
 python src\cli\prepare_wordpress_publish.py --draft-id <draft_id> --publish-intent draft
 python src\cli\sync_wordpress_transport.py --blog-publish-id <blog_publish_id> --config-path <wordpress_rest_config.json>
 python src\cli\sync_wordpress_transport.py --blog-publish-id <blog_publish_id> --config-path <wordpress_rest_config.json> --execute
@@ -297,6 +310,7 @@ python src\cli\validate_facebook_transport.py --config-path <facebook_graph_conf
 python src\cli\validate_facebook_transport.py --config-path <facebook_graph_config.json> --execute --record-audit
 python src\cli\prepare_distribution_linkage.py --blog-publish-id <blog_publish_id> --social-package-id <social_package_id>
 python src\cli\review_social_package.py --social-package-id <social_package_id> --outcome approved --note "hook_matches_blog"
+python src\cli\refine_social_package.py --social-package-id <social_package_id> --provider openai --openai-config-path <openai_provider_config.local.json>
 python src\cli\summarize_distribution_health.py
 python src\cli\summarize_distribution_schedule.py
 python src\cli\record_wordpress_publish_update.py --blog-publish-id <blog_publish_id> --action draft_created --wordpress-post-id <post_id> --wordpress-post-url <post_url>
@@ -317,6 +331,7 @@ python src\cli\summarize_tracking_audit.py --json
 python src\cli\summarize_source_health.py
 python src\cli\summarize_draft_health.py
 python src\cli\reset_runtime_state.py
+python src\cli\restore_runtime_backup.py --backup-path <backup_zip> --target-root <restore_root> --dry-run
 python src\cli\run_operator_api.py
 powershell -ExecutionPolicy Bypass -File scripts\run_operator_api.ps1
 ```
@@ -333,7 +348,7 @@ For live operator activation, the recommended local config examples now live in:
 
 The runtime data files and how to treat them are documented in [data/README.md](C:/Users/Administrator/OneDrive/Documents/co_ma/data/README.md).
 
-The current test baseline is `python -m unittest discover -s tests -v`, which now covers Source Engine, the implemented Phase 2 Content Engine slices, the current Phase 3 distribution slices, and the current Phase 4 tracking slices for on-demand publish-chain history plus exception, activity, variant, and tracking-audit reporting. It also now includes a focused cross-phase smoke test from source item through tracking audit, the Phase 4.5 system-activation readiness-reporting slice, the WordPress remote-state reconciliation slice, the operator API slice, queue-review behavior, dashboard activity/alert visibility, explicit queue-removal handling, queue-approval block guidance, dashboard-to-detail navigation hints, and the new operator-validation endpoint for live plugin readiness. The current green baseline is `227` tests passing, and that baseline is maintained through the repo test suite rather than hand-waved phase notes.
+The current test baseline is `python -m unittest discover -s tests -v`, which now covers Source Engine, the implemented Phase 2 Content Engine slices, the current Phase 3 distribution slices, and the current Phase 4 tracking slices for on-demand publish-chain history plus exception, activity, variant, and tracking-audit reporting. It also now includes a focused cross-phase smoke test from source item through tracking audit, the Phase 4.5 system-activation readiness-reporting slice, the WordPress remote-state reconciliation slice, the optional Phase 4.6 OpenAI quality layer with safe fallback behavior and manual social refinement, the Phase 4.7 media brief and asset-review flow, the operator API slice, queue-review behavior, dashboard activity and alert visibility, explicit queue-removal handling, queue-approval block guidance, dashboard-to-detail navigation hints, the operator-validation endpoint for live plugin readiness, the review-speed layer for filtered inboxes, priority dashboard queues, safe variant-selection actions, read-only AI provenance visibility, and the Phase 4.8 runtime backup and restore tooling baseline. The current green baseline is `253` tests passing, and that baseline is maintained through the repo test suite rather than hand-waved phase notes.
 
 ## Repository Intent
 

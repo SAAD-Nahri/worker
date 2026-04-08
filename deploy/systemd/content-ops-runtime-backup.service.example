@@ -1,0 +1,10 @@
+[Unit]
+Description=Content Ops Runtime Backup
+
+[Service]
+Type=oneshot
+User=co_ma
+Group=co_ma
+WorkingDirectory=/opt/co_ma/current
+ExecStart=/opt/co_ma/current/.venv/bin/python src/cli/create_runtime_backup.py --backup-root /opt/co_ma/backups
+

@@ -4,7 +4,7 @@
 
 This runbook explains how to operate the first approval UI baseline.
 
-The goal is to let the operator review drafts, social packages, and queue items from WordPress admin while preserving the repo runtime as the source of truth.
+The goal is to let the operator review drafts, social packages, media assets, and queue items from WordPress admin while preserving the repo runtime as the source of truth.
 
 ## Core Rule
 
@@ -110,7 +110,7 @@ Use that page to confirm:
 2. the plugin sees API base URL and shared secret values,
 3. the Operator API base URL classification makes sense for the real deployment topology,
 4. the operator API responds to the dedicated validation endpoint,
-5. dashboard, inbox, queue, and combined-health backend checks are all green,
+5. dashboard, draft, social, media, queue, and combined-health backend checks are all green,
 6. the manual final admin checklist is visible before live closeout.
 
 ## Normal Review Flow
@@ -131,34 +131,53 @@ Start at the dashboard to check:
 
 Use the Draft Review page to:
 
-1. open one draft,
-2. inspect preview plus source lineage and downstream linkage,
-3. approve,
-4. mark needs edits,
-5. reject with review note when needed.
+1. narrow the inbox with search or filters when needed,
+2. use inbox quick approve for clean obvious cases,
+3. use inbox quick needs-edits only with a short actionable note,
+4. open one draft detail when deeper review is needed,
+5. inspect preview plus source lineage, downstream linkage, and any visible AI provenance,
+6. switch among prepared headline variants when one option reads better,
+7. approve,
+8. mark needs edits,
+9. reject with review note when needed.
 
 ### 3. Social Review
 
 Use the Social Review page to:
 
-1. inspect hook, caption, and comment CTA,
-2. confirm blog linkage and linked draft context,
-3. approve,
-4. request edits,
-5. reject if not publishable.
+1. narrow the inbox with search or approval/linkage filters,
+2. use quick approve or quick needs-edits for obvious cases,
+3. inspect hook, caption, and comment CTA in detail when needed,
+4. confirm blog linkage, linked draft context, and visible AI provenance,
+5. switch among prepared social variants before final review,
+6. approve,
+7. request edits,
+8. reject if not publishable.
 
-### 4. Queue Review
+### 4. Media Review
+
+Use the Media Review page to:
+
+1. narrow the inbox with search or approval/source filters,
+2. quickly approve clean assets or request edits with a short actionable note,
+3. inspect provenance, alt text, and caption support on detail,
+4. confirm media-brief guidance and prohibited-pattern context,
+5. confirm draft, blog, and social linkage before approval,
+6. reject assets that are not publishable or not properly sourced.
+
+### 5. Queue Review
 
 Use the Queue Review page to:
 
-1. approve items for queue,
-2. hold items with actionable note,
-3. remove items from the current batch with an explicit note,
-4. set blog schedule only when the queue item is actually eligible,
-5. inspect collision warnings before scheduling,
-6. read the approve block reason when failed queue items are not yet eligible,
-7. read the schedule block reason when scheduling is not yet available,
-8. inspect linked mapping outputs before final queue decisions.
+1. filter down to the specific queue family or blocked state you need,
+2. approve items for queue,
+3. hold items with actionable note,
+4. remove items from the current batch with an explicit note,
+5. set blog schedule only when the queue item is actually eligible,
+6. inspect collision warnings before scheduling,
+7. read the approve block reason when failed queue items are not yet eligible,
+8. read the schedule block reason when scheduling is not yet available,
+9. inspect linked mapping outputs before final queue decisions.
 
 ## Important V1 Boundaries
 
@@ -166,17 +185,19 @@ The approval UI currently supports:
 
 1. draft review,
 2. social package review,
-3. queue review,
-4. blog queue scheduling,
-5. combined health visibility.
+3. media asset review,
+4. queue review,
+5. blog queue scheduling,
+6. combined health visibility.
 
 It does not yet replace:
 
 1. WordPress transport execution,
 2. Facebook transport execution,
-3. media review,
+3. media generation or upload,
 4. analytics workflows,
-5. future fast-lane approval.
+5. OpenAI generation controls,
+6. future fast-lane approval.
 
 ## Recommended Validation Commands
 
@@ -201,9 +222,13 @@ Use a real WordPress admin environment to verify:
 3. the Validation page loads and backend checks are green,
 4. dashboard loads from the operator API,
 5. draft review actions append runtime state correctly,
-6. social review actions append runtime state correctly,
-7. queue review and scheduling actions behave correctly,
-8. API auth failures surface as safe admin notices.
+6. draft filter state survives open-detail and back navigation,
+7. draft and social detail pages show AI provenance only as read-only context,
+8. social review actions append runtime state correctly,
+9. media review actions append runtime state correctly,
+10. social variant switching updates the selected package output and reopens review safely,
+11. queue review and scheduling actions behave correctly,
+12. API auth failures surface as safe admin notices.
 
 ## Known Limits
 

@@ -82,6 +82,15 @@ Recommended service example:
 
 1. [deploy/systemd/content-ops-operator-api.service.example](C:/Users/Administrator/OneDrive/Documents/co_ma/deploy/systemd/content-ops-operator-api.service.example)
 
+Recommended timer examples:
+
+1. [deploy/systemd/content-ops-source-intake.service.example](C:/Users/Administrator/OneDrive/Documents/co_ma/deploy/systemd/content-ops-source-intake.service.example)
+2. [deploy/systemd/content-ops-source-intake.timer.example](C:/Users/Administrator/OneDrive/Documents/co_ma/deploy/systemd/content-ops-source-intake.timer.example)
+3. [deploy/systemd/content-ops-daily-reports.service.example](C:/Users/Administrator/OneDrive/Documents/co_ma/deploy/systemd/content-ops-daily-reports.service.example)
+4. [deploy/systemd/content-ops-daily-reports.timer.example](C:/Users/Administrator/OneDrive/Documents/co_ma/deploy/systemd/content-ops-daily-reports.timer.example)
+5. [deploy/systemd/content-ops-runtime-backup.service.example](C:/Users/Administrator/OneDrive/Documents/co_ma/deploy/systemd/content-ops-runtime-backup.service.example)
+6. [deploy/systemd/content-ops-runtime-backup.timer.example](C:/Users/Administrator/OneDrive/Documents/co_ma/deploy/systemd/content-ops-runtime-backup.timer.example)
+
 Recommended reverse-proxy examples:
 
 1. [deploy/nginx/content-ops-operator-api.nginx.example](C:/Users/Administrator/OneDrive/Documents/co_ma/deploy/nginx/content-ops-operator-api.nginx.example)
@@ -119,6 +128,12 @@ For a normal update:
 7. resume timers,
 8. watch the first scheduled cycle after deployment.
 
+Before or during that flow, the repo now has a dedicated backup command:
+
+```powershell
+python src\cli\create_runtime_backup.py --backup-root backups
+```
+
 ## Recovery Routine
 
 If the host fails or the working copy becomes unusable:
@@ -130,6 +145,18 @@ If the host fails or the working copy becomes unusable:
 5. restore local config files from the secure source,
 6. rerun health, history, and audit commands,
 7. only then resume scheduled jobs.
+
+Dry-run restore preview:
+
+```powershell
+python src\cli\restore_runtime_backup.py --backup-path backups\<bundle>.zip --target-root <restore_root> --dry-run
+```
+
+Restore with config when appropriate:
+
+```powershell
+python src\cli\restore_runtime_backup.py --backup-path backups\<bundle>.zip --target-root <restore_root> --restore-config
+```
 
 ## Local Development Note
 

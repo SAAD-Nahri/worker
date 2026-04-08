@@ -1,0 +1,12 @@
+[Unit]
+Description=Content Ops Daily Runtime Reports
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=co_ma
+Group=co_ma
+WorkingDirectory=/opt/co_ma/current
+ExecStart=/bin/bash -lc 'set -euo pipefail; RUN_DIR=/opt/co_ma/current/data/reports/$$(date -u +%%Y%%m%%dT%%H%%M%%SZ); mkdir -p "$$RUN_DIR"; /opt/co_ma/current/.venv/bin/python src/cli/summarize_system_activation.py --json > "$$RUN_DIR/system_activation.json"; /opt/co_ma/current/.venv/bin/python src/cli/summarize_source_health.py --json > "$$RUN_DIR/source_health.json"; /opt/co_ma/current/.venv/bin/python src/cli/summarize_draft_health.py --json > "$$RUN_DIR/draft_health.json"; /opt/co_ma/current/.venv/bin/python src/cli/summarize_distribution_health.py --json > "$$RUN_DIR/distribution_health.json"; /opt/co_ma/current/.venv/bin/python src/cli/summarize_publish_chain_history.py --view all --json > "$$RUN_DIR/publish_chain_history.json"; /opt/co_ma/current/.venv/bin/python src/cli/summarize_tracking_audit.py --json > "$$RUN_DIR/tracking_audit.json"'
+

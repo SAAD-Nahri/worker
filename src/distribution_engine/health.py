@@ -4,6 +4,8 @@ from collections import Counter
 from dataclasses import dataclass, replace
 from pathlib import Path
 
+from media_engine.assets import resolve_asset_readiness
+from media_engine.storage import ASSET_RECORDS_PATH, read_asset_records
 from distribution_engine.storage import (
     BLOG_FACEBOOK_MAPPING_RECORDS_PATH,
     BLOG_PUBLISH_RECORDS_PATH,
@@ -31,6 +33,12 @@ class DistributionHealthRow:
     blog_queue_state: str | None
     social_package_id: str | None
     social_approval_state: str | None
+    asset_record_id: str | None
+    asset_approval_state: str | None
+    asset_source_kind: str | None
+    asset_intended_usage: str | None
+    asset_complete: bool
+    asset_block_reason: str | None
     social_review_count: int
     latest_social_review_outcome: str | None
     facebook_publish_id: str | None
@@ -59,6 +67,12 @@ class DistributionHealthRow:
             "blog_queue_state": self.blog_queue_state,
             "social_package_id": self.social_package_id,
             "social_approval_state": self.social_approval_state,
+            "asset_record_id": self.asset_record_id,
+            "asset_approval_state": self.asset_approval_state,
+            "asset_source_kind": self.asset_source_kind,
+            "asset_intended_usage": self.asset_intended_usage,
+            "asset_complete": self.asset_complete,
+            "asset_block_reason": self.asset_block_reason,
             "social_review_count": self.social_review_count,
             "latest_social_review_outcome": self.latest_social_review_outcome,
             "facebook_publish_id": self.facebook_publish_id,
@@ -84,12 +98,15 @@ class DistributionHealthSummary:
     total_blog_publish_chains: int
     wordpress_status_counts: dict[str, int]
     social_approval_counts: dict[str, int]
+    asset_approval_counts: dict[str, int]
     facebook_publish_status_counts: dict[str, int]
     blog_queue_state_counts: dict[str, int]
     facebook_queue_state_counts: dict[str, int]
     mapping_status_counts: dict[str, int]
     operator_signal_counts: dict[str, int]
     blog_chains_with_social_package: int
+    blog_chains_with_asset_record: int
+    blog_chains_asset_complete: int
     blog_chains_with_remote_wordpress_post: int
     blog_chains_with_confirmed_blog_url: int
     blog_chains_with_facebook_post_id: int
@@ -105,12 +122,15 @@ class DistributionHealthSummary:
             "total_blog_publish_chains": self.total_blog_publish_chains,
             "wordpress_status_counts": dict(self.wordpress_status_counts),
             "social_approval_counts": dict(self.social_approval_counts),
+            "asset_approval_counts": dict(self.asset_approval_counts),
             "facebook_publish_status_counts": dict(self.facebook_publish_status_counts),
             "blog_queue_state_counts": dict(self.blog_queue_state_counts),
             "facebook_queue_state_counts": dict(self.facebook_queue_state_counts),
             "mapping_status_counts": dict(self.mapping_status_counts),
             "operator_signal_counts": dict(self.operator_signal_counts),
             "blog_chains_with_social_package": self.blog_chains_with_social_package,
+            "blog_chains_with_asset_record": self.blog_chains_with_asset_record,
+            "blog_chains_asset_complete": self.blog_chains_asset_complete,
             "blog_chains_with_remote_wordpress_post": self.blog_chains_with_remote_wordpress_post,
             "blog_chains_with_confirmed_blog_url": self.blog_chains_with_confirmed_blog_url,
             "blog_chains_with_facebook_post_id": self.blog_chains_with_facebook_post_id,
@@ -126,6 +146,7 @@ def build_distribution_health_report(
     blog_publish_records_path: Path | None = None,
     social_package_records_path: Path | None = None,
     social_package_reviews_path: Path | None = None,
+    asset_records_path: Path | None = None,
     facebook_publish_records_path: Path | None = None,
     queue_item_records_path: Path | None = None,
     mapping_records_path: Path | None = None,
@@ -133,6 +154,7 @@ def build_distribution_health_report(
     blog_publish_path = blog_publish_records_path or BLOG_PUBLISH_RECORDS_PATH
     social_package_path = social_package_records_path or SOCIAL_PACKAGE_RECORDS_PATH
     social_review_path = social_package_reviews_path or SOCIAL_PACKAGE_REVIEWS_PATH
+    asset_path = asset_records_path or ASSET_RECORDS_PATH
     facebook_publish_path = facebook_publish_records_path or FACEBOOK_PUBLISH_RECORDS_PATH
     queue_item_path = queue_item_records_path or QUEUE_ITEM_RECORDS_PATH
     mapping_path = mapping_records_path or BLOG_FACEBOOK_MAPPING_RECORDS_PATH
@@ -147,6 +169,8 @@ def build_distribution_health_report(
     latest_facebook_publish_by_social_package = _latest_facebook_publish_by_social_package(
         read_facebook_publish_records(facebook_publish_path)
     )
+    latest_asset_by_blog_publish = _latest_asset_by_blog_publish(read_asset_records(asset_path))
+    latest_asset_by_draft = _latest_asset_by_draft(read_asset_records(asset_path))
     latest_blog_queue_by_blog_publish, latest_facebook_queue_by_blog_publish = _latest_queue_maps(
         read_queue_item_records(queue_item_path)
     )
@@ -172,6 +196,11 @@ def build_distribution_health_report(
                 )
                 if blog_publish_id in latest_social_package_by_blog_publish
                 else 0
+            ),
+            asset_record=_select_asset_record(
+                latest_blog_publish_by_id[blog_publish_id],
+                latest_asset_by_blog_publish=latest_asset_by_blog_publish,
+                latest_asset_by_draft=latest_asset_by_draft,
             ),
             facebook_publish=(
                 latest_facebook_publish_by_social_package.get(
@@ -222,6 +251,21 @@ def _latest_facebook_publish_by_social_package(records: list) -> dict[str, objec
     return latest
 
 
+def _latest_asset_by_blog_publish(records: list) -> dict[str, object]:
+    latest: dict[str, object] = {}
+    for record in records:
+        if record.blog_publish_id:
+            latest[record.blog_publish_id] = record
+    return latest
+
+
+def _latest_asset_by_draft(records: list) -> dict[str, object]:
+    latest: dict[str, object] = {}
+    for record in records:
+        latest[record.draft_id] = record
+    return latest
+
+
 def _latest_queue_maps(records: list) -> tuple[dict[str, object], dict[str, object]]:
     latest_blog_queue: dict[str, object] = {}
     latest_facebook_queue: dict[str, object] = {}
@@ -240,11 +284,23 @@ def _latest_mapping_by_blog_publish(records: list) -> dict[str, object]:
     return latest
 
 
+def _select_asset_record(
+    blog_publish,
+    *,
+    latest_asset_by_blog_publish: dict[str, object],
+    latest_asset_by_draft: dict[str, object],
+):
+    if blog_publish.blog_publish_id in latest_asset_by_blog_publish:
+        return latest_asset_by_blog_publish[blog_publish.blog_publish_id]
+    return latest_asset_by_draft.get(blog_publish.draft_id)
+
+
 def _build_row(
     blog_publish,
     social_package,
     latest_social_review,
     social_review_count: int,
+    asset_record,
     facebook_publish,
     blog_queue,
     facebook_queue,
@@ -258,6 +314,7 @@ def _build_row(
         getattr(facebook_queue, "last_error", None),
         getattr(facebook_publish, "last_error", None),
     )
+    asset_complete, asset_block_reason = resolve_asset_readiness(asset_record)
     return DistributionHealthRow(
         blog_publish_id=blog_publish.blog_publish_id,
         draft_id=blog_publish.draft_id,
@@ -268,6 +325,12 @@ def _build_row(
         blog_queue_state=getattr(blog_queue, "queue_state", None),
         social_package_id=getattr(social_package, "social_package_id", None),
         social_approval_state=getattr(social_package, "approval_state", None),
+        asset_record_id=getattr(asset_record, "asset_record_id", None),
+        asset_approval_state=getattr(asset_record, "approval_state", None),
+        asset_source_kind=getattr(asset_record, "asset_source_kind", None),
+        asset_intended_usage=getattr(asset_record, "intended_usage", None),
+        asset_complete=asset_complete,
+        asset_block_reason=asset_block_reason,
         social_review_count=social_review_count,
         latest_social_review_outcome=getattr(latest_social_review, "review_outcome", None),
         facebook_publish_id=getattr(facebook_publish, "facebook_publish_id", None),
@@ -292,6 +355,8 @@ def _build_row(
         operator_signal=_resolve_operator_signal(
             blog_publish,
             social_package=social_package,
+            asset_record=asset_record,
+            asset_complete=asset_complete,
             facebook_publish=facebook_publish,
             blog_queue=blog_queue,
             facebook_queue=facebook_queue,
@@ -369,6 +434,8 @@ def _resolve_consistency_issues(row: DistributionHealthRow) -> tuple[str, ...]:
             issues.append("facebook_queue_state_mismatch")
         if row.mapping_status != "social_published":
             issues.append("mapping_status_mismatch")
+        if row.asset_record_id is not None and not row.asset_complete:
+            issues.append("published_social_missing_approved_asset")
     elif row.facebook_publish_status == "scheduled":
         if not row.scheduled_for_facebook:
             issues.append("scheduled_facebook_missing_time")
@@ -376,6 +443,8 @@ def _resolve_consistency_issues(row: DistributionHealthRow) -> tuple[str, ...]:
             issues.append("facebook_queue_state_mismatch")
         if row.mapping_status != "social_queued":
             issues.append("mapping_status_mismatch")
+        if row.asset_record_id is not None and not row.asset_complete:
+            issues.append("scheduled_social_missing_approved_asset")
     elif row.facebook_publish_status == "failed":
         if row.facebook_queue_state not in {None, "facebook_publish_failed"}:
             issues.append("facebook_queue_state_mismatch")
@@ -406,6 +475,8 @@ def _resolve_operator_signal(
     blog_publish,
     *,
     social_package,
+    asset_record,
+    asset_complete: bool,
     facebook_publish,
     blog_queue,
     facebook_queue,
@@ -427,6 +498,13 @@ def _resolve_operator_signal(
         return "social_needs_edits"
     if facebook_queue.queue_state == "ready_for_social_review":
         return "ready_for_social_review"
+    if (
+        social_package.approval_state == "approved"
+        and facebook_queue.queue_state == "approved_for_queue"
+        and asset_record is not None
+        and not asset_complete
+    ):
+        return "asset_review_pending"
     if blog_queue.queue_state == "ready_for_wordpress":
         return "ready_for_wordpress"
     if blog_queue.queue_state == "wordpress_draft_created":
@@ -464,14 +542,15 @@ def _row_sort_key(row: DistributionHealthRow) -> tuple[int, str, str]:
         "wordpress_draft_created": 7,
         "ready_for_blog_schedule": 8,
         "social_packaging_pending": 9,
-        "ready_for_facebook_publish": 10,
-        "ready_for_facebook_schedule": 11,
-        "approved_for_queue": 12,
-        "scheduled_blog": 13,
-        "published_blog": 14,
-        "scheduled_facebook": 15,
-        "published_facebook": 16,
-        "monitor": 17,
+        "asset_review_pending": 10,
+        "ready_for_facebook_publish": 11,
+        "ready_for_facebook_schedule": 12,
+        "approved_for_queue": 13,
+        "scheduled_blog": 14,
+        "published_blog": 15,
+        "scheduled_facebook": 16,
+        "published_facebook": 17,
+        "monitor": 18,
     }
     return (
         0 if row.consistency_issues else 1 if row.schedule_alerts else 2,
@@ -484,6 +563,7 @@ def _row_sort_key(row: DistributionHealthRow) -> tuple[int, str, str]:
 def _build_summary(rows: list[DistributionHealthRow]) -> DistributionHealthSummary:
     wordpress_status_counts = Counter(row.wordpress_status for row in rows)
     social_approval_counts = Counter(row.social_approval_state or "none" for row in rows)
+    asset_approval_counts = Counter(row.asset_approval_state or "none" for row in rows)
     facebook_publish_status_counts = Counter(row.facebook_publish_status or "none" for row in rows)
     blog_queue_state_counts = Counter(row.blog_queue_state or "missing" for row in rows)
     facebook_queue_state_counts = Counter(row.facebook_queue_state or "missing" for row in rows)
@@ -510,12 +590,15 @@ def _build_summary(rows: list[DistributionHealthRow]) -> DistributionHealthSumma
         total_blog_publish_chains=len(rows),
         wordpress_status_counts=dict(wordpress_status_counts),
         social_approval_counts=dict(social_approval_counts),
+        asset_approval_counts=dict(asset_approval_counts),
         facebook_publish_status_counts=dict(facebook_publish_status_counts),
         blog_queue_state_counts=dict(blog_queue_state_counts),
         facebook_queue_state_counts=dict(facebook_queue_state_counts),
         mapping_status_counts=dict(mapping_status_counts),
         operator_signal_counts=dict(operator_signal_counts),
         blog_chains_with_social_package=sum(1 for row in rows if row.social_package_id is not None),
+        blog_chains_with_asset_record=sum(1 for row in rows if row.asset_record_id is not None),
+        blog_chains_asset_complete=sum(1 for row in rows if row.asset_complete),
         blog_chains_with_remote_wordpress_post=sum(1 for row in rows if row.has_remote_wordpress_post),
         blog_chains_with_confirmed_blog_url=sum(1 for row in rows if row.has_confirmed_blog_url),
         blog_chains_with_facebook_post_id=sum(1 for row in rows if row.has_facebook_post_id),

@@ -2,7 +2,7 @@
 
 ## Purpose
 
-This document defines how OpenAI should be configured as the first optional provider-backed quality layer.
+This document defines how OpenAI is configured as the first optional provider-backed quality layer.
 
 ## Core Rule
 
@@ -17,6 +17,8 @@ The preferred local secret path is:
 1. `OPENAI_API_KEY`
 
 This keeps the provider credential out of repo-tracked files and aligns with the current single-operator baseline.
+
+When `OPENAI_API_KEY` is present, it takes precedence over any file `api_key`.
 
 ## Acceptable Fallback Path
 
@@ -34,7 +36,14 @@ The first provider config should support at minimum:
 2. `model`
 3. `timeout_seconds`
 
+Defaults:
+
+1. `model = gpt-5.4-mini`
+2. `timeout_seconds = 30`
+
 The local config file is a fallback convenience, not the preferred path.
+
+`model` and `timeout_seconds` may come from the local file even when `OPENAI_API_KEY` comes from the environment.
 
 ## Logging Rules
 
@@ -42,13 +51,20 @@ The local config file is a fallback convenience, not the preferred path.
 2. do not write the API key into draft records, runtime logs, or acceptance docs,
 3. only record provider-safe fields such as provider label or model label.
 
+## SDK Rule
+
+The repo should use the official OpenAI Python SDK and the Responses API.
+
+The SDK client should be constructed lazily inside the provider layer so the rest of the repo stays isolated from provider setup.
+
 ## Failure Rule
 
 If OpenAI config is missing or invalid:
 
 1. the micro-skill path must fall back to the heuristic provider by default,
-2. the system must not stop being usable,
-3. provider-selection errors should be explicit and non-secret-bearing.
+2. the social refinement CLI must report the fallback reason without mutating the selected package,
+3. the system must not stop being usable,
+4. provider-selection errors should be explicit and non-secret-bearing.
 
 ## Definition Of Done
 
@@ -56,4 +72,5 @@ This policy is satisfied when OpenAI can be configured locally without:
 
 1. becoming required,
 2. exposing secrets,
-3. weakening the heuristic fallback baseline.
+3. weakening the heuristic fallback baseline,
+4. leaking provider details outside the intended provider layer.

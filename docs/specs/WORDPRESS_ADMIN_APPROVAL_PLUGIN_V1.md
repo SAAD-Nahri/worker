@@ -36,10 +36,11 @@ The current implementation is a PHP WordPress admin plugin with:
 2. dashboard page,
 3. draft review page,
 4. social review page,
-5. queue review page,
-6. validation page,
-7. settings page,
-8. server-side HTTP calls to the internal operator API.
+5. media review page,
+6. queue review page,
+7. validation page,
+8. settings page,
+9. server-side HTTP calls to the internal operator API.
 
 ## Operator-Facing Pages
 
@@ -49,12 +50,14 @@ Shows:
 
 1. draft counts,
 2. social review counts,
-3. queue counts,
-4. transport and activation signals,
-5. recent review activity,
-6. current alerts,
-7. fast-lane placeholder card,
-8. deep links from review activity and resolvable alerts into the relevant detail screens.
+3. media review counts,
+4. queue counts,
+5. transport and activation signals,
+6. recent review activity,
+7. current alerts,
+8. priority review-now sections for drafts, social packages, media assets, and queue items,
+9. fast-lane placeholder card,
+10. deep links from review activity and resolvable alerts into the relevant detail screens.
 
 ### Draft Review
 
@@ -62,11 +65,15 @@ Provides:
 
 1. draft inbox rows,
 2. draft detail screen,
-3. approve / needs-edits / reject actions,
-4. review-note capture,
-5. review-history visibility,
-6. source-lineage context,
-7. headline-suggestion visibility.
+3. inbox filtering and search,
+4. inline quick actions for approve and needs-edits,
+5. draft detail variant selection for prepared headline options,
+6. approve / needs-edits / reject actions,
+7. review-note capture,
+8. review-history visibility,
+9. source-lineage context,
+10. headline-suggestion visibility,
+11. read-only AI provenance visibility when the draft used provider-backed wording.
 
 ### Social Review
 
@@ -74,10 +81,28 @@ Provides:
 
 1. social package inbox rows,
 2. social package detail screen,
-3. approve / needs-edits / reject actions,
-4. review-note capture,
-5. linked blog preview,
-6. linked draft context.
+3. inbox filtering and search,
+4. inline quick actions for approve and needs-edits,
+5. detail-screen switching across prepared social variants,
+6. approve / needs-edits / reject actions,
+7. review-note capture,
+8. linked blog preview,
+9. linked draft context,
+10. read-only social and draft AI provenance visibility.
+
+### Media Review
+
+Provides:
+
+1. media asset inbox rows,
+2. media asset detail screen,
+3. inbox filtering and search,
+4. inline quick approve and quick needs-edits actions,
+5. approve / needs-edits / reject actions on detail,
+6. linked media-brief context,
+7. linked draft, blog, and social-package context,
+8. asset readiness and provenance visibility,
+9. deep links back into related draft and social review screens.
 
 ### Queue Review
 
@@ -85,12 +110,14 @@ Provides:
 
 1. queue inbox rows,
 2. queue detail screen,
-3. approve / hold / remove actions,
-4. conditional blog schedule form for eligible blog queue items,
-5. schedule-alert visibility,
-6. schedule block reasons when direct scheduling is not yet allowed,
-7. approve block reasons when failed queue items are not yet eligible for approval,
-8. mapping and selected-output context on the detail screen.
+3. inbox filtering,
+4. inline quick actions for approve and hold,
+5. approve / hold / remove actions,
+6. conditional blog schedule form for eligible blog queue items,
+7. schedule-alert visibility,
+8. schedule block reasons when direct scheduling is not yet allowed,
+9. approve block reasons when failed queue items are not yet eligible for approval,
+10. mapping and selected-output context on the detail screen.
 
 ### Validation
 
@@ -98,7 +125,7 @@ Provides:
 
 1. local config and capability checks,
 2. operator-API connectivity and endpoint-check visibility,
-3. one backend-readiness snapshot for the approval shell,
+3. one backend-readiness snapshot for the approval shell, including media-row visibility,
 4. one operator-API reachability classification so localhost mistakes are visible early,
 5. a manual live-admin checklist for the final WordPress validation pass.
 
@@ -174,10 +201,15 @@ Not permitted as authoritative workflow storage:
 The plugin must respect the current workflow boundaries:
 
 1. draft review is separate from social review,
-2. social review is separate from queue review,
-3. queue review is separate from transport execution,
-4. content-affecting edits must still reopen review through repo-side logic,
-5. no silent bypass of human approval is allowed.
+2. social review is separate from media review,
+3. media review is separate from queue review,
+4. queue review is separate from transport execution,
+5. content-affecting edits must still reopen review through repo-side logic,
+6. no silent bypass of human approval is allowed.
+
+The plugin should preserve current inbox filter state when the operator opens a detail screen and comes back, so daily review work does not degrade into repeated re-filtering.
+
+The plugin must not expose generation buttons for OpenAI-backed variants in this phase. Generation remains a manual CLI path outside WordPress admin.
 
 ## Fast-Lane Rule
 
@@ -211,7 +243,8 @@ That means the plugin should be treated as:
 The plugin does not yet:
 
 1. provide a full article editor,
-2. manage assets,
+2. manage asset upload or generation,
 3. expose analytics dashboards,
-4. manage autoapproval or shadow mode,
-5. replace the transport runbooks.
+4. generate new provider-backed text from the admin UI,
+5. manage autoapproval or shadow mode,
+6. replace the transport runbooks.

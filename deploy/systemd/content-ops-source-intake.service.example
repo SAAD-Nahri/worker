@@ -1,0 +1,12 @@
+[Unit]
+Description=Content Ops Source Intake
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=co_ma
+Group=co_ma
+WorkingDirectory=/opt/co_ma/current
+ExecStart=/opt/co_ma/current/.venv/bin/python src/cli/run_source_intake.py --limit-per-source 5
+
